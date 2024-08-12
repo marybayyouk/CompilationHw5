@@ -1,0 +1,81 @@
+%{
+#include <iostream>
+#include "hw3_output.hpp"
+#include "ProgramTypes.hpp"
+extern int yylex();
+extern int yylineno;
+extern StackTable stackTable;
+int yyerror(const char *s);
+%}
+
+%token INT BYTE B BOOL TRUE FALSE IF RETURN WHILE BREAK CONTINUE SC ID NUM STRING
+
+%right ASSIGN 
+%left OR
+%left AND
+%left ISEQUAL
+%left RELOP
+%left ADD SUB
+%left MULTIPLY DIVIDE
+%right ELSE
+%right NOT
+%left LPAREN RPAREN LBRACE RBRACE 
+
+%%
+Program: Statements                                                    { stackTable.popScope(); }                                                                               
+Statements: Statement                                                  { $$ = new Statements(dynamic_cast<Statement*>($1)); }
+            | Statements Statement                                     { $$ = new Statements(dynamic_cast<Statements*>($1), dynamic_cast<Statement*>($2)); } 
+                                                                        
+Statement: LBRACE {stackTable.pushScope(false, null)} Statements {stackTable.popScope()} RBRACE 
+                                                                       { $$ = new Statement(dynamic_cast<Statements*>($2)); } 
+            | Type ID SC                                               { $$ = new Statement(typeToString($1), $2); }
+            | Type ID ASSIGN Exp SC                                    { $$ = new Statement(typeToString($1), $2, dynamic_cast<Expression*>($4), true); } 
+            | ID ASSIGN Exp SC                                         { $$ = new Statement($1, dynamic_cast<Expression*>($3)); } 
+            | Call SC                                                  { $$ = new Statement(dynamic_cast<Call*>($1)); }
+            | RETURN SC                                                {} 
+            | IF LPAREN Exp RPAREN {stackTable.pushScope(false, null)} Statement %prec IF                  
+                                                                       { $$ = new Statement(null, dynamic_cast<Expression*>($3), false); stackTable.popScope(); }
+            | IF LPAREN Exp RPAREN {stackTable.pushScope(false, null)} Statement ELSE Statement            
+                                                                       { $$ = new Statement(null, dynamic_cast<Expression*>($3), false); stackTable.popScope(); }
+            | WHILE LPAREN Exp RPAREN {stackTable.pushScope(true,null)} Statement                        
+                                                                       { $$ = new Statement(null, dynamic_cast<Expression*>($3), false); stackTable.popScope(); } 
+            | BREAK SC                                                 { $$ = new Statement(dynamic_cast<Node*>($1)->getValue())}
+            | CONTINUE SC                                              { $$ = new Statement(dynamic_cast<Node*>($1)->getValue())}
+
+Call:   ID LPAREN Exp RPAREN                                           { $$ = new Call($1, dynamic_cast<Expression*>($3));} 
+
+Type:   INT                                                            { $$ = new Type("INT") }
+        | BYTE                                                         { $$ = new Type("BYTE") } 
+        | BOOL                                                         { $$ = new Type("BOOL") }
+
+Exp:    LPAREN Exp RPAREN                                              { $$ = new Expression(dynamic_cast<Expression*>($2)); }      
+        | Exp ADD Exp                                                  { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "BINOP"); }
+        | Exp SUB Exp                                                  { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "BINOP"); } 
+        | Exp DIVIDE Exp                                               { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "BINOP"); }
+        | Exp MULTIPLY Exp                                             { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "BINOP"); }
+        | ID                                                           { $$ = new Expression($1); } 
+        | Call                                                         { $$ = new Expression(dynamic_cast<Call*>($1)); }
+        | NUM                                                          { $$ = new Expression($1, INT); }
+        | NUM B                                                        { $$ = new Expression($1, BYTE); }
+        | STRING                                                       { $$ = new Expression($1, STRING); }
+        | TRUE                                                         { $$ = new Expression($1, BOOL); }
+        | FALSE                                                        { $$ = new Expression($1, BOOL); }
+        | NOT Exp                                                      { $$ = new Expression(dynamic_cast<Expression*>($2), true); }
+        | Exp AND Exp                                                  { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "RELOP"); } 
+        | Exp OR Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "RELOP"); }
+        | Exp ISEQUAL Exp                                              { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "RELOP"); }
+        | Exp RELOP Exp                                                { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "RELOP"); }
+        | LPAREN Type RPAREN Exp                                       { $$ = new Expression(dynamic_cast<Expression*>($4), typeToString($2)); }
+
+%%
+StackTable stackTable; = StackTable();
+
+int yyerror(const char *s) {
+    output::errorSyn(yylineno);
+    exit(0);
+    }
+
+int main() {
+    return yyparse();
+}
+
