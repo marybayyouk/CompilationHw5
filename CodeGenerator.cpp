@@ -1,48 +1,20 @@
 #include "CodeGenerator.h"
 
-string getBinopOp(string op) {
-    if (op == "+") {
-        return "add";
-    } else if (op == "-") {
-        return "sub";
-    } else if (op == "*") {
-        return "mul";
-    } 
-    else {
-        return "DIV";
-    }
+void CodeGenerator::defineLable(const string& label) {
+    buffer.emit(label + ":");
 }
 
-string getRelopOp(string op) {
-    if (op == "==") {
-        return "eq";
-    } else if (op == "!=") {
-        return "ne";
-    } else if (op == "<") {
-        return "slt";
-    } else if (op == "<=") {
-        return "sle";
-    } else if (op == ">") {
-        return "sgt";
-    } else if (op == ">=") {
-        return "sge";
-    }
-    return "";
+void CodeGenerator::emitBranchToLabel(const string& label) {
+    buffer.emit("br label %" + label);
 }
 
-string freshReg() {
-    int static currReg = 0;
-    return "%" + to_string(currReg++);
+void emitProgramStart() {
+    buffer.printGlobalBuffer();
+    buffer.printCodeBuffer();
 }
 
-string freshGlobalReg() {
-    int static currReg = 0;
-    return "@g" + to_string(currReg++);
-}
-
-string freshLabel(const string& prefix) {  
-    int static currLabel = 0;
-    return prefix + to_string(currLabel++);
+void CodeGenerator::generateGlobalVar(const string& name, const string& type) {
+    buffer.emit("@" + name + " = global i32 0");
 }
 
 string CodeGenerator::generateLoad(int offset, const string& ptr) {
@@ -91,4 +63,39 @@ void CodeGenerator::generateBinaryInst(Expression* exp, string& lhs, const strin
         string relopOp = getRelopOp(op);  ///get the operation
         buffer.emit(resReg + " = icmp " + relopOp + " i32 " + lhs + ", " + rhs);
     }
+}
+
+string CodeGenerator::generateIcmp(const string& cond, const string& lhs, const string& rhs) {
+    string resReg = freshReg();
+    buffer.emit(resReg + " = icmp " + cond + " i32 " + lhs + ", " + rhs);
+    return resReg;
+}
+
+void CodeGenerator::generateCondBranch(const string& condReg, const string& trueLabel, const string& falseLabel) {
+    buffer.emit("br i1 " + condReg + ", label %" + trueLabel + ", label %" + falseLabel);
+}   
+
+void CodeGenerator::generateUncondBranch(const string& label) {
+    buffer.emit("br label %" + label);
+}
+
+void CodeGenerator::generateFunctionCall(Node* node, CodeBuffer& buffer) {
+    string funcName = node->getValue();
+    buffer.emit("call void @" + funcName + "()");
+}
+
+void checkDivZero(const string& reg) {
+    string zeroReg = freshReg();
+    buffer.emit(zeroReg + " = alloca i32");
+    buffer.emit("store i32 0, i32* " + zeroReg);
+    string cmpReg = freshReg();
+    buffer.emit(cmpReg + " = icmp eq i32 0, " + reg);
+    string zeroLabel = allocateLable("divByZero");
+    string nonZeroLabel = allocateLable("nonDivByZero");
+    buffer.emit("br i1 " + cmpReg + ", label %" + zeroLabel + ", label %" + nonZeroLabel);
+    buffer.emit(zeroLabel + ":");
+    buffer.emit("call void @printDivByZero()");
+    buffer.emit("call void @exit(i32 0)");
+    buffer.emit("br label %" + nonZeroLabel);
+    buffer.emit(nonZeroLabel + ":");
 }

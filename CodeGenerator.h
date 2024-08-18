@@ -1,5 +1,6 @@
 #include "ProgramTypes.h"
 #include "SymbolTable.h"
+#include "GeneralFunctions.h"
 #include "cg.hpp"
 #include <string>
 #include <vector>
@@ -7,18 +8,16 @@
 extern CodeBuffer buffer;
 using namespace std;
 
-string getBinopOp(string op); ///get binary operation
-string getRelopOp(string op); ///get relational operation
-string freshReg(); ///allocate new register
-string freshGlobalReg(); ///allocate new global register
-string freshLabel(const string& prefix); ///allocate new label
-
 class CodeGenerator{
 //private:
 public:
     CodeGenerator() = default;
     ~CodeGenerator() = default;
+    void defineLable(const string& label); ///define label
+    void emitProgramStart(); ///emit program start
+    void emitBranchToLabel(const string& label); ///emit branch to label
     string checkDivZero(const string& reg); ///check if division by zero
+    void generateGlobalVar(const string& name, const string& type); ///generate global variable
     string generateLoad(int offset, const string& ptr); ///generate load instruction
     void generateStore(int offset, const string& valueReg, const string& ptr); ///generate store instruction
     void generateBinaryInst(Expression* exp, string& lhs, const string& rhs, string op, string inst); ///generate Binop/Relop instruction
