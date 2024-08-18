@@ -25,6 +25,7 @@ public:
 };
 
 class Expression : public Node {
+    string reg;
 public:
     Expression();
     Expression(Node* exp, bool _); //𝐸𝑥𝑝 → Not Exp
@@ -34,6 +35,8 @@ public:
     Expression(Node* exp, string type); //𝐸𝑥𝑝 → 𝐿𝑃𝐴𝑅𝐸𝑁 𝑇𝑦𝑝𝑒 𝑅𝑃𝐴𝑅𝐸𝑁 𝐸𝑥𝑝
     Expression(Node* terminalExp, string type); //Exp->BOOL/BYTE/INT/NUM/STRING
     Expression(Node* leftExp, Node* rightExp, string op); // Exp -> Exp And / Or Exp
+    void setReg(string reg) { this->reg = reg; }
+    string getReg() const { return reg; }
     ~Expression() = default;
 };
 

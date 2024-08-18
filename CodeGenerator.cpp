@@ -8,9 +8,32 @@ void CodeGenerator::emitBranchToLabel(const string& label) {
     buffer.emit("br label %" + label);
 }
 
-void emitProgramStart() {
+void CodeGenerator::emitProgramStart() {
     buffer.printGlobalBuffer();
     buffer.printCodeBuffer();
+}
+
+void CodeGenerator::emitTypesLiteral(Expression* exp, const string& type) {
+    if (type == "BYTE") {
+        buffer.emit(exp->getReg() + " = add i32 " + exp->getValue() + ", 0");
+    }
+    else if (type == "BOOL") {
+        buffer.emit("; Alloc&Emit BOOL, expName: " + exp->getValue());
+        buffer.emit("br lable @");
+    }
+    else if (type == "INT") { ///NUM
+        buffer.emit(exp->getReg() + " = add i32 " + exp->getValue() + ", 0");
+    }
+    else if (type == "STRING") {
+        string globalReg = freshGlobalReg();
+        string strReg = freshReg();
+        ///MAYBE NEXT LINE SHOULD BE -1 AND NOT +1
+        buffer.emit(globalReg + " = constant [" + to_string(exp->getValue().size() + 1) + " x i8]" + " c" + exp->getValue() + "\\00\"");
+        buffer.emit(strReg + " = getelementptr[" + to_string(exp->getValue().size() + 1) + " x i8]" 
+                        + ", " + to_string(exp->getValue().size() + 1) + " x i8]*  " + globalReg + ", i32 0, i32 0");
+        exp->setReg(strReg);
+    }
+    
 }
 
 void CodeGenerator::generateGlobalVar(const string& name, const string& type) {
@@ -84,7 +107,7 @@ void CodeGenerator::generateFunctionCall(Node* node, CodeBuffer& buffer) {
     buffer.emit("call void @" + funcName + "()");
 }
 
-void checkDivZero(const string& reg) {
+void CodeGenerator::checkDivZero(const string& reg) { ///NEED TO CHECK IT LATER NOT SURE IF IT WORKS
     string zeroReg = freshReg();
     buffer.emit(zeroReg + " = alloca i32");
     buffer.emit("store i32 0, i32* " + zeroReg);
@@ -98,4 +121,48 @@ void checkDivZero(const string& reg) {
     buffer.emit("call void @exit(i32 0)");
     buffer.emit("br label %" + nonZeroLabel);
     buffer.emit(nonZeroLabel + ":");
+
+
+    buffer.emit("@.DIV_BY_ZERO_ERROR = internal constant [23 x i8] c\"Error division by zero\\00\"");
+    // Define the function that checks for division by zero
+    buffer.emit("define void @check_division(i32 %value) {");
+    // Compare the input value to zero
+    buffer.emit("  %isZero = icmp eq i32 %value, 0");
+    // Conditional branch: if %isZero is true, go to ILLEGAL, else go to LEGAL
+    buffer.emit("  br i1 %isZero, label %ILLEGAL, label %LEGAL");
+    // ILLEGAL block - handles division by zero
+    buffer.emit("ILLEGAL:");
+    buffer.emit("  call void @print(i8* getelementptr([23 x i8], [23 x i8]* @.DIV_BY_ZERO_ERROR, i32 0, i32 0))");
+    buffer.emit("  call void @exit(i32 0)");
+    buffer.emit("  ret void");
+    // LEGAL block - continue if no division by zero
+    buffer.emit("LEGAL:");
+    buffer.emit("  ret void");
+
+    // End of function
+    buffer.emit("}");
 }
+
+string CodeGenerator::generateAlloca() {
+    string allocaReg = freshReg();
+    buffer.emit(allocaReg + " = alloca i32 50"); ///allocate stack
+    return allocaReg;
+}
+
+void CodeGenerator::generateReturn() {
+    buffer.emit("ret i32 0");
+    buffer.emit("}");
+}
+
+void CodeGenerator::generatePhi(const string& resReg, const string& type, const vector<pair<string, string>>& labelsAndRegs) {
+    string phiReg = freshReg();
+    string phiStr = "phi i32 ";
+    for (auto& labelAndReg : labelsAndRegs) {
+        phiStr += "[ " + labelAndReg.first + ", %" + labelAndReg.second + " ], ";
+    }
+    phiStr.pop_back();
+    phiStr.pop_back();
+    buffer.emit(phiReg + " = " + phiStr);
+    buffer.emit(resReg + " = " + phiReg);
+}
+
