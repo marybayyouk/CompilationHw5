@@ -1,4 +1,6 @@
 #include "CodeGenerator.h"
+#include "GeneralFunctions.h"
+#include "ProgramTypes.h"
 
 void CodeGenerator::defineLable(const string& label) {
     buffer.emit(label + ":");
@@ -33,7 +35,6 @@ void CodeGenerator::emitTypesLiteral(Expression* exp, const string& type) {
                         + ", " + to_string(exp->getValue().size() + 1) + " x i8]*  " + globalReg + ", i32 0, i32 0");
         exp->setReg(strReg);
     }
-    
 }
 
 void CodeGenerator::generateGlobalVar(const string& name, const string& type) {
@@ -102,45 +103,27 @@ void CodeGenerator::generateUncondBranch(const string& label) {
     buffer.emit("br label %" + label);
 }
 
-void CodeGenerator::generateFunctionCall(Node* node, CodeBuffer& buffer) {
-    string funcName = node->getValue();
-    buffer.emit("call void @" + funcName + "()");
+void CodeGenerator::generateFunctionCall(Expression* ExpNode) {
+    string reg = freshReg();
+    string cmd = getCallEmitLine(ExpNode->getValue(), ExpNode->getReg());
+    buffer.emit(reg + " = " + cmd);
 }
 
 void CodeGenerator::checkDivZero(const string& reg) { ///NEED TO CHECK IT LATER NOT SURE IF IT WORKS
-    string zeroReg = freshReg();
-    buffer.emit(zeroReg + " = alloca i32");
-    buffer.emit("store i32 0, i32* " + zeroReg);
-    string cmpReg = freshReg();
-    buffer.emit(cmpReg + " = icmp eq i32 0, " + reg);
-    string zeroLabel = allocateLable("divByZero");
-    string nonZeroLabel = allocateLable("nonDivByZero");
-    buffer.emit("br i1 " + cmpReg + ", label %" + zeroLabel + ", label %" + nonZeroLabel);
-    buffer.emit(zeroLabel + ":");
+    string zeroR = freshReg();
+    string compareReg = freshReg();
+    string IllegalDivLabel = allocateLable("divByZero");
+    string LegalDivLable = allocateLable("nonDivByZero");
+
+    buffer.emit(zeroR + " = alloca i32");
+    buffer.emit("store i32 0, i32* " + zeroR);
+    buffer.emit(compareReg + " = icmp eq i32 0, " + reg);
+    buffer.emit("br i1 " + compareReg + ", label %" + IllegalDivLabel + ", label %" + LegalDivLable);
+    buffer.emit(IllegalDivLabel + ":");
     buffer.emit("call void @printDivByZero()");
     buffer.emit("call void @exit(i32 0)");
-    buffer.emit("br label %" + nonZeroLabel);
-    buffer.emit(nonZeroLabel + ":");
-
-
-    buffer.emit("@.DIV_BY_ZERO_ERROR = internal constant [23 x i8] c\"Error division by zero\\00\"");
-    // Define the function that checks for division by zero
-    buffer.emit("define void @check_division(i32 %value) {");
-    // Compare the input value to zero
-    buffer.emit("  %isZero = icmp eq i32 %value, 0");
-    // Conditional branch: if %isZero is true, go to ILLEGAL, else go to LEGAL
-    buffer.emit("  br i1 %isZero, label %ILLEGAL, label %LEGAL");
-    // ILLEGAL block - handles division by zero
-    buffer.emit("ILLEGAL:");
-    buffer.emit("  call void @print(i8* getelementptr([23 x i8], [23 x i8]* @.DIV_BY_ZERO_ERROR, i32 0, i32 0))");
-    buffer.emit("  call void @exit(i32 0)");
-    buffer.emit("  ret void");
-    // LEGAL block - continue if no division by zero
-    buffer.emit("LEGAL:");
-    buffer.emit("  ret void");
-
-    // End of function
-    buffer.emit("}");
+    buffer.emit("br label %" + LegalDivLable);
+    buffer.emit(LegalDivLable + ":");
 }
 
 string CodeGenerator::generateAlloca() {
@@ -166,3 +149,49 @@ void CodeGenerator::generatePhi(const string& resReg, const string& type, const 
     buffer.emit(resReg + " = " + phiReg);
 }
 
+
+
+
+// void handle_break() {
+//     auto scope = find_last_while();
+//     string cmd = "br label %" + scope->el;
+//     buffer.emit(cmd);
+// }
+
+// void handle_continue() {
+//     auto scope = find_last_while();
+
+//     string cmd = "br label %" + scope->sl;
+//     buffer.emit(cmd);
+// }
+
+// cope *find_last_while() {
+//     scope* s = symbol_table::get_instance()->current;
+//     while (s != NULL){
+//         if (s->scope_type == "while"){
+//             return s;
+//         }
+//         s = s->parent;
+//     }
+//     return nullptr;
+// }
+
+// void handle_while(Node *exp) {
+//     auto currScope = 
+//     auto scope = find_last_while();
+//     auto expNode = (ExpNode *) exp;
+
+//     scope->el = expNode->false_l;
+//     string cmd = expNode->true_l + ":";
+//     buffer.emit(cmd);
+
+// }
+
+
+
+
+
+// void general::if_else_code(Exp* exp, Label* label)
+// {
+//     buffer.emit("br i1 " + exp->reg + ", label %" + label->true_label + ", label %"+ label->false_label);
+// }

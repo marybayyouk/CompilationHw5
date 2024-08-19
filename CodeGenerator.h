@@ -1,7 +1,6 @@
-#include "ProgramTypes.h"
 #include "SymbolTable.h"
 #include "GeneralFunctions.h"
-#include "cg.hpp"
+//#include "cg.hpp"
 #include <string>
 #include <vector>
 
@@ -13,7 +12,6 @@ class CodeGenerator{
 public:
     CodeGenerator() = default;
     ~CodeGenerator() = default;
-    //string allocateStack(); ///allocate stack
     void defineLable(const string& label); ///define label
     void emitBranchToLabel(const string& label); ///emit branch to label
     void emitProgramStart(); ///emit program start
@@ -26,10 +24,9 @@ public:
     string generateIcmp(const string& cond, const string& lhs, const string& rhs);  ///generate iCompare operation
     void generateCondBranch(const string& condReg, const string& trueLabel, const string& falseLabel); ///generate conditional branch
     void generateUncondBranch(const string& label); ///generate unconditional branch
-    void generateFunctionCall(Node* node, CodeBuffer& buffe); ///generate function call
+    void generateFunctionCall(Expression* ExpNode); ///generate function call
     void generateReturn(); ///generate return instruction
     string generateAlloca(); ///generate alloca instruction
-    //string generateGEP(const string& ptr, const vector<string>& indices); ///generate getElementPtr instruction
     ///phi instruction
     void generatePhi(const string& resReg, const string& type, const vector<pair<string, string>>& labelsAndRegs);
 };

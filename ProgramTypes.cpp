@@ -1,9 +1,18 @@
 #include "ProgramTypes.h"
-#include "hw3_output.hpp"
 
 extern int yylineno;
 extern StackTable scopes;
+extern CodeGenerator codeGenerator;
 using namespace std;
+
+
+bool isBool(Expression* exp) {
+    if(exp->getType() != "BOOL") {
+        output::errorMismatch(yylineno);
+        exit(0);
+    }
+    return true;
+}
 
 vector<string> convertVectorToUpperCase(vector<string> toUpper) {
     vector<string> toRet;
@@ -96,7 +105,9 @@ Expression::Expression(Node* leftExp, Node* rightExp, string op) {
     Expression* left = dynamic_cast<Expression *> (leftExp);
     Expression* right = dynamic_cast<Expression *> (rightExp);
     string lType = left->getType();
+    string lValue = left->getValue();
     string rType = right->getType();
+    string rValue = right->getValue();
 
     if (lType != "INT" || lType != "BYTE" || rType != "INT" || rType != "BYTE") {
         output::errorMismatch(yylineno);
@@ -109,8 +120,11 @@ Expression::Expression(Node* leftExp, Node* rightExp, string op) {
             setType("INT");
         }
     }
-    if (op == "RELOP") {
+    if (op == "RELOP" || op == "AND" || op == "OR") {
         setType("BOOL");
+        if (op == "RELOP") {
+            codeGenerator.generateBinaryInst(this, lValue, rValue, op, "RELOP");
+        }
     }
 }
 

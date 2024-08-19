@@ -61,9 +61,9 @@ Exp:    LPAREN Exp RPAREN                                              { $$ = ne
         | TRUE                                                         { $$ = new Expression($1, BOOL); }
         | FALSE                                                        { $$ = new Expression($1, BOOL); }
         | NOT Exp                                                      { $$ = new Expression(dynamic_cast<Expression*>($2), true); }
-        | Exp AND Exp                                                  { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "RELOP"); } 
-        | Exp OR Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "RELOP"); }
-        | Exp ISEQUAL Exp                                              { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "RELOP"); }
+        | Exp AND Exp                                                  { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "AND"); } 
+        | Exp OR Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "OR"); }
+        | Exp ISEQUAL Exp                                              { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "=="); }
         | Exp RELOP Exp                                                { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "RELOP"); }
         | LPAREN Type RPAREN Exp                                       { $$ = new Expression(dynamic_cast<Expression*>($4), typeToString($2)); }
 
