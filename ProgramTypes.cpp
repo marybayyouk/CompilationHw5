@@ -119,11 +119,19 @@ Expression::Expression(Node* leftExp, Node* rightExp, string op) {
         } else {
             setType("INT");
         }
+        codeGenerator.generateBinaryInst(this, lValue, rValue, op, "BINOP");
     }
+
     if (op == "RELOP" || op == "AND" || op == "OR") {
         setType("BOOL");
         if (op == "RELOP") {
             codeGenerator.generateBinaryInst(this, lValue, rValue, op, "RELOP");
+        }
+        else if (op == "AND") {
+            codeGenerator.generateBinaryInst(this, lValue, rValue, "AND", "BINOP");
+        }
+        else if (op == "OR") {
+            codeGenerator.generateBinaryInst(this, lValue, rValue, "OR", "BINOP");
         }
     }
 }

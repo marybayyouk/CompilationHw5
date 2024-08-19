@@ -16,32 +16,20 @@ class Node {
     std::string value;
     std::string type;
     string reg;
-    string trueLabel;
-    string falseLabel;  
-    string nextLabel;
 public:
-    Node() : value(""),type(""), reg(""), trueLabel(""), falseLabel(""), nextLabel("") {};
-    Node(string value, string type) : value(value), type(type), 
-                                    reg(""), trueLabel(""), falseLabel(""), nextLabel("") {};
-    Node(string value, string type, string reg) : value(value), type(type), 
-                                    reg(reg), trueLabel(""), falseLabel(""), nextLabel("") {};
+    Node() : value(""), type("") , reg("") {};
+    Node(string value, string type) : value(value), type(type), reg("") {};
+    Node(string value, string type, string reg) : value(value), type(type), reg(reg) {};
+    virtual ~Node() {};
+    virtual void print() = 0;
     /// GETTERS
     std::string getValue() const { return value; }
     std::string getType() const { return type; }
     string getReg() const { return reg; }   
-    string getTrueLabel() const { return trueLabel; }
-    string getFalseLabel() const { return falseLabel; }
-    string getNextLabel() const { return nextLabel; }
     /// SETTERS
     void setValue(std::string value) { this->value = value; }
     void setType(std::string type) { this->type = type; }
     void setReg(std::string reg) { this->reg = reg; }
-    void setTrueLabel(std::string label) { trueLabel = label; }
-    void setFalseLabel(std::string label) { falseLabel = label; }
-    void setNextLabel(std::string label) { nextLabel = label; }
-
-    virtual ~Node() {};
-    virtual void print() = 0;
 };
 
 class Type : public Node {
@@ -63,25 +51,26 @@ public:
     ~Expression() = default;
 };
 
-// class BoolExpression : public Expression {
-// private:
-//     string trueLabel;
-//     string falseLabel;
-// public:
-//     string getTrueLabel() const { return trueLabel; }
-//     void setTrueLabel(string label) { trueLabel = label; }
-//     string getFalseLabel() const { return falseLabel; }
-//     void setFalseLabel(string label) { falseLabel = label; }
-//     /// BoolExp -> IF ( Exp ) Statement
-//     //BoolExpression(Expression* exp, Statement* trueStat) : Expression() {};
-//     ///BoolExp -> IF ( Exp ) Statement ELSE Statement
-//     BoolExpression(Expression* exp, Statement* trueStat, Statement* falseStat) : Expression() {};
-// };
-
+class Label : public Node {
+    string trueLabel;
+    string falseLabel;
+    string nextLabel;   
+public:
+    Label() : Node("",""), trueLabel(buffer.freshLabel()), 
+                    falseLabel(buffer.freshLabel()), nextLabel(buffer.freshLabel()) {};
+    
+    string getTrueLabel() const { return trueLabel; }
+    string getFalseLabel() const { return falseLabel; }
+    string getNextLabel() const { return nextLabel; }
+    void setTrueLabel(std::string label) { trueLabel = label; }
+    void setFalseLabel(std::string label) { falseLabel = label; }
+    void setNextLabel(std::string label) { nextLabel = label; }
+    ~Label() = default;
+};
 
 class Call : public Node {
 public:
-    Call(string type, Node* terminalID);
+    Call(string type, Node* terminalID); 
     ~Call() = default;
 };
 
@@ -99,8 +88,8 @@ public:
 
 class Statments : public Node {
     public:
-    Statments(Statement* Statement) : Node() {};
-    Statments (Statement* Statement, Statments* Statments) : Node() {};
+    Statments(Statement* Statement) : Node() {}; // Statements -> Statement
+    Statments (Statement* Statement, Statments* Statments) : Node() {}; // Statements -> Statements Statement
     ~Statments() = default;
 };
 

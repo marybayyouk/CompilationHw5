@@ -24,9 +24,11 @@ public:
     string generateIcmp(const string& cond, const string& lhs, const string& rhs);  ///generate iCompare operation
     void generateCondBranch(const string& condReg, const string& trueLabel, const string& falseLabel); ///generate conditional branch
     void generateUncondBranch(const string& label); ///generate unconditional branch
-    void generateFunctionCall(Expression* ExpNode); ///generate function call
+    void generateFunctionCall(Node* terminalID); ///generate function call
     void generateReturn(); ///generate return instruction
+    void closeFunction(); ///close function
     string generateAlloca(); ///generate alloca instruction
     ///phi instruction
     void generatePhi(const string& resReg, const string& type, const vector<pair<string, string>>& labelsAndRegs);
+    void generateJumpStatement(const string& label); ///generate break/continue statement
 };

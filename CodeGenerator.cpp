@@ -1,6 +1,9 @@
 #include "CodeGenerator.h"
 #include "GeneralFunctions.h"
 #include "ProgramTypes.h"
+#include "cg.hpp"
+
+extern StackTable scopes;
 
 void CodeGenerator::defineLable(const string& label) {
     buffer.emit(label + ":");
@@ -103,9 +106,9 @@ void CodeGenerator::generateUncondBranch(const string& label) {
     buffer.emit("br label %" + label);
 }
 
-void CodeGenerator::generateFunctionCall(Expression* ExpNode) {
+void CodeGenerator::generateFunctionCall(Node* terminalID) {
     string reg = freshReg();
-    string cmd = getCallEmitLine(ExpNode->getValue(), ExpNode->getReg());
+    string cmd = getCallEmitLine(terminalID->getValue(), terminalID->getReg());
     buffer.emit(reg + " = " + cmd);
 }
 
@@ -134,7 +137,11 @@ string CodeGenerator::generateAlloca() {
 
 void CodeGenerator::generateReturn() {
     buffer.emit("ret i32 0");
-    buffer.emit("}");
+}
+
+void CodeGenerator::closeFunction() {
+        generateReturn();
+        buffer.emit("}");
 }
 
 void CodeGenerator::generatePhi(const string& resReg, const string& type, const vector<pair<string, string>>& labelsAndRegs) {
@@ -149,13 +156,17 @@ void CodeGenerator::generatePhi(const string& resReg, const string& type, const 
     buffer.emit(resReg + " = " + phiReg);
 }
 
+void CodeGenerator::generateJumpStatement(const string& label) {
+    buffer.emit("br label %" + label);
+}
 
 
 
-// void handle_break() {
-//     auto scope = find_last_while();
-//     string cmd = "br label %" + scope->el;
-//     buffer.emit(cmd);
+
+//  void CodeGenerator::generateJumpStatement(const string& label) {
+//     auto scope = scopes.getScope();
+//     if ()
+//     buffer.emit("br label %" + 
 // }
 
 // void handle_continue() {
