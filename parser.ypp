@@ -49,10 +49,10 @@ Type:   INT                                                            { $$ = ne
         | BOOL                                                         { $$ = new Type("BOOL") }
 
 Exp:    LPAREN Exp RPAREN                                              { $$ = new Expression(dynamic_cast<Expression*>($2)); }      
-        | Exp ADD Exp                                                  { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "BINOP"); }
-        | Exp SUB Exp                                                  { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "BINOP"); } 
-        | Exp DIVIDE Exp                                               { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "BINOP"); }
-        | Exp MULTIPLY Exp                                             { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "BINOP"); }
+        | Exp ADD Exp                                                  { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "ADD"); }
+        | Exp SUB Exp                                                  { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "SUB"); } 
+        | Exp DIVIDE Exp                                               { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "DIVIDE"); }
+        | Exp MULTIPLY Exp                                             { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "MULTIPLY"); }
         | ID                                                           { $$ = new Expression($1); } 
         | Call                                                         { $$ = new Expression(dynamic_cast<Call*>($1)); }
         | NUM                                                          { $$ = new Expression($1, INT); }
@@ -63,8 +63,14 @@ Exp:    LPAREN Exp RPAREN                                              { $$ = ne
         | NOT Exp                                                      { $$ = new Expression(dynamic_cast<Expression*>($2), true); }
         | Exp AND Exp                                                  { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "AND"); } 
         | Exp OR Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "OR"); }
-        | Exp ISEQUAL Exp                                              { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "=="); }
-        | Exp RELOP Exp                                                { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "RELOP"); }
+        | Exp EQ Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "=="); }
+        | Exp NE Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "!="); }
+
+        | Exp GE Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "GE"); }
+        | Exp GT Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "GT"); }
+        | Exp LE Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "LE"); }
+        | Exp LT Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "LT"); }
+
         | LPAREN Type RPAREN Exp                                       { $$ = new Expression(dynamic_cast<Expression*>($4), typeToString($2)); }
 
 %%

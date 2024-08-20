@@ -14,7 +14,7 @@ bool isBool(Expression* exp) {
     return true;
 }
 
-vector<string> convertVectorToUpperCase(vector<string> toUpper) {
+vector<string> convertVectorToUpperCase(vector<string>& toUpper) {
     vector<string> toRet;
     for (string name : toUpper) {
         toRet.push_back(upperCase(name));
@@ -32,7 +32,47 @@ bool LegalType(string typeOne, string typeTwo) {
     return false;
 }
 
-//////////////////////////////////////////Expression//////////////////////////////////////////
+
+///////////////////////////////////////BooleanExpression///////////////////////////////////////
+
+// BooleanExpression -> Exp RELOP/AND/OR Exp
+BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, string op) {
+    BooleanExpression* left = dynamic_cast<BooleanExpression *> (leftExp);
+    BooleanExpression* right = dynamic_cast<BooleanExpression *> (rightExp);
+
+    if (left->getType() != "BOOL" || right->getType() != "BOOL") {
+        output::errorMismatch(yylineno);
+        exit(0);
+    }
+
+    if (op == "OR") {
+        setType("BOOL");
+        setTrueLabel(left->getTrueLabel());
+        setFalseLabel(right->getFalseLabel());
+        buffer.emit(getValue() + " = or i1 " + left->getValue() + ", " + right->getValue());
+    } 
+    else if(op == "AND") {
+        setType("BOOL");
+        setTrueLabel(right->getTrueLabel());
+        setFalseLabel(left->getFalseLabel());
+        buffer.emit(getValue() + " = and i1 " + left->getValue() + ", " + right->getValue());
+    } 
+    else if (op == "GT" || op == "GE" || op == "LT" || op == "LE" || op == "EQ" || op == "NE") {
+        setType("BOOL");
+        setTrueLabel(allocateLable("true"));
+        setFalseLabel(allocateLable("false"));
+        buffer.emit(getValue() + " = icmp " + getRelopOp(op) + " i32 " + left->getValue() + ", " + right->getValue());
+        buffer.emit("br i1 " + getValue() + ", label %" + getTrueLabel() + ", label %" + getFalseLabel());
+    }
+    
+    else {
+        output::errorMismatch(yylineno);
+        exit(0);
+    }
+}
+
+
+//////////////////////////////////////////Expression///////////////////////////////////////////
 Expression::Expression() : Node("","VOID") {};
 
 // 𝐸𝑥𝑝 → 𝑁𝑜𝑡 𝐸𝑥𝑝
@@ -48,13 +88,17 @@ Expression::Expression(Node* exp, bool _) : Node(exp->getValue(), "") {
 // 𝐸𝑥𝑝 → 𝐿𝑃𝐴𝑅𝐸𝑁 𝐸𝑥𝑝 𝑅𝑃𝐴𝑅𝐸𝑁
 Expression::Expression(Node *exp) : Node(exp->getValue(), "") {};
 
-// 𝐸𝑥𝑝 → 𝐶𝑎𝑙𝑙
-Expression::Expression(Call* call) {
+// EXP -> Call --------GENERATION IS DONE NOTHING TO DO--------
+BooleanExpression::BooleanExpression(Call* call) {
     setValue(call->getValue());
     setType(scopes.findSymbol(call->getValue())->getType());
+    setReg(call->getReg());
+    setTrueLabel(call->getTrueLabel());
+    setFalseLabel(call->getFalseLabel());
+    setNextLabel(call->getNextLabel());
 }
 
-// 𝐸𝑥𝑝 → 𝐼𝐷
+// EXP -> ID --------GENERATION IS DONE--------
 Expression::Expression(Node* terminalExp) {
     if (!scopes.isDefinedInProgram(terminalExp->getValue())){
         output::errorUndef(yylineno, terminalExp->getValue());
@@ -62,9 +106,14 @@ Expression::Expression(Node* terminalExp) {
     }
     setValue(terminalExp->getValue());
     setType(scopes.findSymbol(terminalExp->getValue())->getType());
+
+    int offset = scopes.findSymbol(terminalExp->getValue())->getOffset();
+    string ptr = freshReg();
+    string reg = codeGenerator.generateLoad(offset, ptr, terminalExp->getType());
+    setReg(reg); 
 }
 
-// 𝐸𝑥𝑝 → 𝐿𝑃𝐴𝑅𝐸𝑁 𝑇𝑦𝑝𝑒 𝑅𝑃𝐴𝑅𝐸𝑁 𝐸𝑥𝑝
+// Exp -> LPAREN Exp RPAREN --------GENERATION IS DONE--------
 Expression::Expression(Node* toExp, string type) {
     Expression* exp = dynamic_cast<Expression *> (toExp);
     if(!LegalType(exp->getType(), type)){
@@ -73,18 +122,23 @@ Expression::Expression(Node* toExp, string type) {
     }
     setType(type);
     setValue(exp->getValue());
+
+    string reg = emitTruncation(exp->getReg(), type, exp->getType(), true);
+    setReg(reg);
 }
 
-// Exp->BOOL/BYTE/INT/NUM/STRING
+// Exp->BOOL/BYTE/INT/NUM/STRING --------GENERATION IS DONE--------
 Expression::Expression(Node* terminalExp, string type) : Node(terminalExp->getValue(), type) {
     if((type == "BYTE") && (stoi(terminalExp->getValue()) > 255)){
         output::errorByteTooLarge(yylineno, terminalExp->getValue());
         exit(0);
     }
+    codeGenerator.emitTypesLiteral(this, type);
 }
 
 
-// Exp -> Exp And / Or Exp
+////////*********************neeed to delete this and use BooleanExpression*********************////////
+// Exp -> Exp And / Or Exp   
 Expression::Expression(Node* leftExp, Node* rightExp, string op) {
     Expression* left = dynamic_cast<Expression *> (leftExp);
     Expression* right = dynamic_cast<Expression *> (rightExp);
@@ -94,12 +148,14 @@ Expression::Expression(Node* leftExp, Node* rightExp, string op) {
     } 
     if (op == "AND" || op == "OR") {
         setType("BOOL");
+        codeGenerator.generateBinaryInst(this->getType(), left->getValue(), right->getValue(), op, "BINOP");
     } else {
         output::errorMismatch(yylineno);
         exit(0);
     }
 }
 
+////////*********************neeed to delete the *RELOP* Part BooleanExpression*********************////////
 // Exp -> Exp Relop/Binop Exp
 Expression::Expression(Node* leftExp, Node* rightExp, string op) {
     Expression* left = dynamic_cast<Expression *> (leftExp);
@@ -113,31 +169,25 @@ Expression::Expression(Node* leftExp, Node* rightExp, string op) {
         output::errorMismatch(yylineno);
         exit(0);
     }
-    if (op == "BINOP") {
+    ///SET TYPE FOR BINOP 
+    if (op == "ADD" || op == "SUB" || op == "MUL" || op == "DIV") {
         if (lType == "BYTE" && rType == "BYTE") {
             setType("BYTE");
         } else {
             setType("INT");
         }
-        codeGenerator.generateBinaryInst(this, lValue, rValue, op, "BINOP");
+        ///SOMETHING IS WRONG HERE - NEED TO REVIEW
+        codeGenerator.generateBinaryInst(this->getType(), lValue, rValue, op, "BINOP");
     }
-
-    if (op == "RELOP" || op == "AND" || op == "OR") {
+    ///SET TYPE FOR RELOP
+    if (op == "GT" || op == "GE" || op == "LT" || op == "LE" || op == "EQ" || op == "NE") {
         setType("BOOL");
-        if (op == "RELOP") {
-            codeGenerator.generateBinaryInst(this, lValue, rValue, op, "RELOP");
-        }
-        else if (op == "AND") {
-            codeGenerator.generateBinaryInst(this, lValue, rValue, "AND", "BINOP");
-        }
-        else if (op == "OR") {
-            codeGenerator.generateBinaryInst(this, lValue, rValue, "OR", "BINOP");
-        }
+        codeGenerator.generateBinaryInst(this->getType(), lValue, rValue, op, "RELOP");
     }
 }
 
 //////////////////////////////////////////Call//////////////////////////////////////////
-// Call -> ID LPAREN RPAREN
+// Call -> ID LPAREN RPAREN ----GENERATION IS DONE----
 Call::Call(string type, Node* terminalID) : Node(terminalID->getValue(), "") {
     if (!scopes.isDefinedInProgram(terminalID->getValue())) {
         output::errorUndefFunc(yylineno, terminalID->getValue());
@@ -154,6 +204,8 @@ Call::Call(string type, Node* terminalID) : Node(terminalID->getValue(), "") {
     //////I THINK WE SHOULF CHECK MORE CASES FOR EACH 3 POSSIBLE FUNCTION
     setType(scopes.findSymbol(terminalID->getValue())->getType());
     setValue(scopes.findSymbol(terminalID->getValue())->getName());
+    codeGenerator.generateFunctionCall(terminalID);
+    //**************************NEED TO ADD LABELS HERE**************************
 }
 
 //////////////////////////////////////////Statement//////////////////////////////////////////
@@ -164,12 +216,16 @@ Statement::Statement(std::string value) : Node(value,"") {
             output::errorUnexpectedBreak(yylineno);
             exit(0);
         }
-    } else if (value == "CONTINUE") {
+        codeGenerator.generateJumpStatement("BREAK");
+    } 
+    else if (value == "CONTINUE") {
         if (!scopes.getScope()->getIsLoop()) {
             output::errorUnexpectedContinue(yylineno);
             exit(0);
         }
+        codeGenerator.generateJumpStatement("CONTINUE");
     }
+    //**************************NEED TO ADD LABELS HERE**************************
 }
 
 // Statement -> Call SC
@@ -177,7 +233,7 @@ Statement::Statement(Call * call) : Node() {
     if (!scopes.isDefinedInProgram(call->getValue()) || !scopes.findSymbol(call->getValue())->getIsFunction()){
         output::errorUndefFunc(yylineno, call->getValue());
         exit(0);
-    }
+    } 
 }
 
 //Statement -> Type ID SC 

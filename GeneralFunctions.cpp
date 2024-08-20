@@ -1,33 +1,30 @@
 #include "GeneralFunctions.h"
 
 string getBinopOp(string op) {
-    if (op == "+") {
+    if (op == "ADD") {
         return "add";
-    } else if (op == "-") {
+    } else if (op == "SUB") {
         return "sub";
-    } else if (op == "*") {
+    } else if (op == "MUL") {
         return "mul";
     } 
-    else {
-        return "DIV";
-    }
+    
+    return "DIV";
 }
 
 string getRelopOp(string op) {
-    if (op == "==") {
+    if (op == "EQ") {
         return "eq";
-    } else if (op == "!=") {
+    } else if (op == "NE") {
         return "ne";
-    } else if (op == "<") {
+    } else if (op == "LT") {
         return "slt";
-    } else if (op == "<=") {
+    } else if (op == "LE") {
         return "sle";
-    } else if (op == ">") {
+    } else if (op == "GT") {
         return "sgt";
-    } else if (op == ">=") {
-        return "sge";
-    }
-    return "";
+    } 
+    return "sge";
 }
 
 string freshReg() {
@@ -48,12 +45,34 @@ string allocateLable(const string& prefix) {
 string getCallEmitLine(string funcName, string reg) {
     string cmd;
     if (funcName == "print") {
-        cmd = "call void @print(i8* getelementptr ([ " + reg + " x i8], [" + reg +
-                      " x i8]* " + "0" + ", i32 0, i32 0))";
+        cmd = "call void @print(i8* " + reg + ");";
     } else if (funcName == "printi") {
         cmd = "call void @printi(i32 0);";
     } else if (funcName == "readi") {
-        cmd = "call i32 @readi(i32 0);";
+        cmd = "int = call i32 @readi(i32 " + reg + ");";
     }
     return cmd;
+}
+
+string emitTruncation(const string& reg, const string& type1, const string& type2, bool is2Types) {
+    string trunReg = freshReg();
+    if(is2Types) {
+        if (type1 == "BYTE" && type2 == "INT") {
+            buffer.emit(trunReg + " = trunc i32 " + reg + " to i8");
+        }
+        else if (type1 == "INT" && type2 == "BYTE") {
+            buffer.emit(trunReg + " = zext i8 " + reg + " to i32");
+        }   
+    }
+    else {
+        buffer.emit(trunReg + " = load i32, i32* " + reg);
+        if (type1 == "BYTE") {
+            buffer.emit(trunReg + " = trunc i32 " + reg + " to i8");
+        }
+        else if (type1 == "BOOL") {
+            buffer.emit(trunReg + " = zext i8 " + reg + " to i1");
+        }
+    }    
+
+    return trunReg;
 }

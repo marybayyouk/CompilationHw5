@@ -5,6 +5,8 @@
 
 extern StackTable scopes;
 
+
+
 void CodeGenerator::defineLable(const string& label) {
     buffer.emit(label + ":");
 }
@@ -19,8 +21,8 @@ void CodeGenerator::emitProgramStart() {
 }
 
 void CodeGenerator::emitTypesLiteral(Expression* exp, const string& type) {
-    if (type == "BYTE") {
-        buffer.emit(exp->getReg() + " = add i32 " + exp->getValue() + ", 0");
+    if (type == "BYTE") { ///NUMB
+        buffer.emit(exp->getReg() + " = add i18 " + exp->getValue() + ", 0");
     }
     else if (type == "BOOL") {
         buffer.emit("; Alloc&Emit BOOL, expName: " + exp->getValue());
@@ -41,19 +43,18 @@ void CodeGenerator::emitTypesLiteral(Expression* exp, const string& type) {
 }
 
 void CodeGenerator::generateGlobalVar(const string& name, const string& type) {
-    buffer.emit("@" + name + " = global i32 0");
+    buffer.emit("@g" + name + " = global i32 0");
 }
 
-string CodeGenerator::generateLoad(int offset, const string& ptr) {
+//exp->reg = generateLoad(offset, ptr, exp->getType());
+string CodeGenerator::generateLoad(int offset, const string& ptr, string expType) {
     if (offset < 0)
-        return "";
+        return "%" + to_string(offset);
     string stackReg = freshReg();
-    string loadReg = freshReg();
     //get the address of the stack
     buffer.emit(stackReg + " = getelementptr i32, i32* " + ptr + ", i32 " + to_string(offset));
-    //load the value from the stack
-    buffer.emit(loadReg + " = load i32, i32* " + stackReg);
-    return loadReg; 
+    
+    return emitTruncation(stackReg, expType, " ", false);
 }
 
 void CodeGenerator::generateStore(int offset, const string& valueReg, const string& ptr) {
@@ -64,38 +65,38 @@ void CodeGenerator::generateStore(int offset, const string& valueReg, const stri
     buffer.emit(stackReg + " = getelementptr i32, i32* " + ptr + ", i32 " + to_string(offset));
     //store the value in the stack
     buffer.emit("store i32 " + valueReg + ", i32* " + stackReg);
+    ///IN PROGRAM TYPES NEED TO HANDLE NODE->TYPE == BOOL
 }
 
-void CodeGenerator::generateBinaryInst(Expression* exp, string& lhs, const string& rhs, string op, string inst) {
-    if (inst == "BINOP") { 
+string CodeGenerator::generateIcmp(const string& op, const string& lhs, const string& rhs) {
+    string resReg = freshReg();
+    buffer.emit(resReg + " = icmp " + op + " i32 " + lhs + ", " + rhs);
+    return resReg;
+}
+
+void CodeGenerator::generateBinaryInst(const string& expType, const string& lhs,const string& rhs, string op, string inst) {
+    if (inst == "BINOP") { //NEED TO REVIEW THIS PART - SOMETHING IS WRONG
         string resReg = freshReg();
-        string binopOp = getBinopOp(op);  ///get the operation
-        if (binopOp == "/") {   
+        op = getBinopOp(op);
+        if (op == "DIV") {   
             checkDivZero(rhs);  ///check if division by zero
-            if(exp->getType() == "INT") {
-                binopOp = "sdiv";
+            if(expType == "INT") {
+                op = "sdiv";
             }
             else {
-                binopOp = "udiv";
+                op = "udiv";
             }
         }
-        buffer.emit(resReg + " = " + binopOp + " i32 " + lhs + ", " + rhs);
-        if (exp->getType() == "BYTE") {
+        buffer.emit(resReg + " = " + op + " i32 " + lhs + ", " + rhs);
+        if (expType == "BYTE") {
             string truncReg = freshReg();
             buffer.emit(truncReg + " = and i32 255, " + resReg);
         }
     }
     else if(inst == "RELOP") {
-        string resReg = freshReg();
-        string relopOp = getRelopOp(op);  ///get the operation
-        buffer.emit(resReg + " = icmp " + relopOp + " i32 " + lhs + ", " + rhs);
+        op = getRelopOp(op);
+        generateIcmp(op, lhs, rhs);
     }
-}
-
-string CodeGenerator::generateIcmp(const string& cond, const string& lhs, const string& rhs) {
-    string resReg = freshReg();
-    buffer.emit(resReg + " = icmp " + cond + " i32 " + lhs + ", " + rhs);
-    return resReg;
 }
 
 void CodeGenerator::generateCondBranch(const string& condReg, const string& trueLabel, const string& falseLabel) {
@@ -135,12 +136,12 @@ string CodeGenerator::generateAlloca() {
     return allocaReg;
 }
 
-void CodeGenerator::generateReturn() {
+void CodeGenerator::funcRet() {
     buffer.emit("ret i32 0");
 }
 
-void CodeGenerator::closeFunction() {
-        generateReturn();
+void CodeGenerator::mainRet() {
+        funcRet();
         buffer.emit("}");
 }
 
@@ -156,53 +157,8 @@ void CodeGenerator::generatePhi(const string& resReg, const string& type, const 
     buffer.emit(resReg + " = " + phiReg);
 }
 
+// Break and Continue
 void CodeGenerator::generateJumpStatement(const string& label) {
     buffer.emit("br label %" + label);
 }
 
-
-
-
-//  void CodeGenerator::generateJumpStatement(const string& label) {
-//     auto scope = scopes.getScope();
-//     if ()
-//     buffer.emit("br label %" + 
-// }
-
-// void handle_continue() {
-//     auto scope = find_last_while();
-
-//     string cmd = "br label %" + scope->sl;
-//     buffer.emit(cmd);
-// }
-
-// cope *find_last_while() {
-//     scope* s = symbol_table::get_instance()->current;
-//     while (s != NULL){
-//         if (s->scope_type == "while"){
-//             return s;
-//         }
-//         s = s->parent;
-//     }
-//     return nullptr;
-// }
-
-// void handle_while(Node *exp) {
-//     auto currScope = 
-//     auto scope = find_last_while();
-//     auto expNode = (ExpNode *) exp;
-
-//     scope->el = expNode->false_l;
-//     string cmd = expNode->true_l + ":";
-//     buffer.emit(cmd);
-
-// }
-
-
-
-
-
-// void general::if_else_code(Exp* exp, Label* label)
-// {
-//     buffer.emit("br i1 " + exp->reg + ", label %" + label->true_label + ", label %"+ label->false_label);
-// }
