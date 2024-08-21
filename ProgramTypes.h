@@ -8,8 +8,7 @@
 #include "hw3_output.hpp"
 
 #define YYSTYPE Node*
-using std::vector;
-static vector<pair<string, string>> beginEndLabels;
+
 
 bool isBool(Expression* exp);
 

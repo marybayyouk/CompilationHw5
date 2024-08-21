@@ -3,8 +3,6 @@
 #include "ProgramTypes.h"
 #include "cg.hpp"
 
-extern StackTable scopes;
-
 
 void CodeGenerator::defineLable(const string& label) {
     buffer.emit(label + ":");
@@ -168,6 +166,11 @@ void CodeGenerator::generatePhi(const string& resReg, const string& type, const 
 
 // Break and Continue
 void CodeGenerator::generateJumpStatement(const string& label) {
-    buffer.emit("br label %" + label);
+    if(label == "BREAK") {
+        buffer.emit("br label %" + beginEndLabels.back().second);
+    }
+    else if(label == "CONTINUE") {
+        buffer.emit("br label % " + beginEndLabels.back().first);
+    }
 }
 

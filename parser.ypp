@@ -1,10 +1,14 @@
 %{
-#include "ProgramTypes.hpp"
+#include "ProgramTypes.h"
+#include "CodeGenerator.h"
+#include "cg.hpp"
 
 extern int yylex();
 extern int yylineno;
 extern char* yytext;
 extern StackTable stackTable;
+extern CodeGenerator codeGenerator;
+extern CodeBuffer buffer;
 void yyerror(const char* message);
 
 %}
@@ -39,7 +43,7 @@ Statement: LBRACE ADDSCOPE Statements REMOVESCOPE RBRACE               { $$ = ne
             | IF LPAREN MakeExp RPAREN ADDSCOPE Statement REMOVESCOPE    { $$ = new Statement("IF", dynamic_cast<BooleanExpression*>($3)); } 
             | IF LPAREN MakeExp RPAREN ADDSCOPE Statement ELSE                 
                                                                         { $$ = new Statement("ELF", dynamic_cast<BooleanExpression*>($3)); stackTable.popScope(); } ADDSCOPE Statement REMOVESCOPE {}                        
-            | WHILE LPAREN Exp RPAREN {stackTable.pushScope(true);}     { $$ = new Statement("WHILE", dynamic_cast<BooleanExpression*>($3)); } Statement REMOVESCOPE {}
+            | WHILE LPAREN Exp RPAREN {stackTable.pushScope(true);}     { $$ = new Statement("WHILE", dynamic_cast<BooleanExpression*>($3)); } Statement REMOVESCOPE { endingLoopMarker(); }
             | BREAK SC                                                 { $$ = new Statement($1); }
             | CONTINUE SC                                              { $$ = new Statement($1); }
 

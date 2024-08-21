@@ -14,6 +14,11 @@ bool isBool(Expression* exp) {
     return true;
 }
 
+void endingLoopMarker() {
+    buffer.emit("br label %" + beginEndLabels.back().first);
+    buffer.emit(beginEndLabels.back().second + ":");
+    beginEndLabels.pop_back();
+}
 ///////////////////////////////////////BooleanExpression///////////////////////////////////////
 
 // BooleanExpression -> Exp RELOP/AND/OR Exp
@@ -217,7 +222,6 @@ Statement::Statement(Node* BCNode) : Node(BCNode->getValue(),"") {
         }
         codeGenerator.generateJumpStatement("CONTINUE");
     }
-    //**************************NEED TO ADD LABELS HERE**************************
 }
 
 // Statement -> Call SC
@@ -275,10 +279,15 @@ Statement::Statement(const string cond,BooleanExpression* boolexp) {
         exit(0);
     }
     if (boolexp->getType() != "BOOL") {
-            //cout << "here" << endl;
-            output::errorMismatch(yylineno);
-            exit(0);
-        }
+        output::errorMismatch(yylineno);
+        exit(0);
+    }
+    if (cond == "WHILE") {
+        string loopLabel = buffer.freshLabel();
+        buffer.emit("br label %" + loopLabel);
+        buffer.emit(loopLabel + ":");
+        beginEndLabels.push_back(pair<string, string>(loopLabel, ""));
+    }
 }
 
 // Statement L Statement R 

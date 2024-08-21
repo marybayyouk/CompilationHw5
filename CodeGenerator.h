@@ -7,6 +7,9 @@
 extern CodeBuffer buffer;
 using namespace std;
 
+using std::vector;
+static vector<pair<string, string>> beginEndLabels;
+
 class CodeGenerator{
 //private:
 public:
