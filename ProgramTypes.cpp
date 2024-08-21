@@ -15,6 +15,7 @@ bool isBool(Expression* exp) {
 }
 
 ///////////////////////////////////////BooleanExpression///////////////////////////////////////
+
 // BooleanExpression -> Exp RELOP/AND/OR Exp
 BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, const string op) {
     BooleanExpression* left = dynamic_cast<BooleanExpression *> (leftExp);
@@ -44,9 +45,9 @@ BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, const string
     }
 }
 
-// 𝐸𝑥𝑝 → 𝑁𝑜𝑡 𝐸𝑥𝑝
-Expression::Expression(Node* exp, bool _) : Node(exp->getValue(), "") {
-    if (_ == false && !stackTable.isDefinedInProgram(exp->getValue())) {
+// Exp -> NOT Exp
+BooleanExpression::BooleanExpression(Node* exp) : Node(exp->getValue(), "") {
+    if (!stackTable.isDefinedInProgram(exp->getValue())) {
         output::errorUndef(yylineno, exp->getValue());
     }
     if (exp->getType() != "BOOL") {
@@ -56,7 +57,7 @@ Expression::Expression(Node* exp, bool _) : Node(exp->getValue(), "") {
     setType("BOOL");
 }
 
-// 𝐸𝑥𝑝 → 𝐿𝑃𝐴𝑅𝐸𝑁 𝐸𝑥𝑝 𝑅𝑃𝐴𝑅𝐸𝑁
+// Exp -> LParen Exp RParen
 BooleanExpression::BooleanExpression(Node *exp) {
     if(exp->getType() == "BOOL") {
         BooleanExpression* boolExp = dynamic_cast<BooleanExpression *> (exp);
@@ -85,6 +86,7 @@ BooleanExpression::BooleanExpression(Call* call) {
 
 
 //////////////////////////////////////////Expression///////////////////////////////////////////
+
 // EXP -> ID --------GENERATION IS DONE--------
 Expression::Expression(Node* terminalExp) {
     if (!stackTable.isDefinedInProgram(terminalExp->getValue())){
@@ -113,7 +115,7 @@ Expression::Expression(Type* type, Expression* exp) {
     setReg(reg);
 }
 
-// Exp->BOOL/BYTE/INT/NUM/STRING --------GENERATION IS DONE--------
+// Exp->BYTE/INT/NUM/STRING --------GENERATION IS DONE--------
 Expression::Expression(string value, string type, bool isFunc=false) : Node(value, type) {
     if((type == "BYTE") && (stoi(value) > 255)){
         output::errorByteTooLarge(yylineno, value);
@@ -121,8 +123,7 @@ Expression::Expression(string value, string type, bool isFunc=false) : Node(valu
     codeGenerator.emitTypesLiteral(this, type);
 }
 
-
-// Exp -> Exp Relop/Binop Exp
+// Exp -> Exp Binop Exp
 Expression::Expression(Node* leftExp, Node* rightExp, const string op) {
     Expression* left = dynamic_cast<Expression *> (leftExp);
     Expression* right = dynamic_cast<Expression *> (rightExp);
@@ -147,7 +148,9 @@ Expression::Expression(Node* leftExp, Node* rightExp, const string op) {
     }
 }
 
+
 ////////////////////////////////////////NumB////////////////////////////////////////////////////
+
 NumB::NumB(Node* expression) : Expression(expression->getValue(), "BYTE") {
     if (stoi(expression->getValue()) >= 256) {
         output::errorByteTooLarge(yylineno, expression->getValue());
@@ -155,7 +158,9 @@ NumB::NumB(Node* expression) : Expression(expression->getValue(), "BYTE") {
     }
 }
 
+
 //////////////////////////////////////////Call//////////////////////////////////////////
+
 // Call -> ID LPAREN RPAREN ----GENERATION IS DONE----
 Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "") {
     if (!(terminalID->getValue() == "print") && !(terminalID->getValue() == "printi") && !(terminalID->getValue() == "readi")) {
@@ -187,7 +192,9 @@ Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "")
     //**************************NEED TO ADD LABELS HERE**************************
 }
 
+
 //////////////////////////////////////////Statement//////////////////////////////////////////
+
 // Statement -> BREAK / CONTINUE
 Statement::Statement(Node* BCNode) : Node(BCNode->getValue(),"") {
     bool loop=false;

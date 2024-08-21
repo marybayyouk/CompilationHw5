@@ -32,41 +32,41 @@ Statements: Statement                                                  { $$ = ne
                                                                         
 Statement: LBRACE ADDSCOPE Statements REMOVESCOPE RBRACE               { $$ = new Statement(dynamic_cast<Statement*>($3)); } 
             | Type ID SC                                               { $$ = new Statement(dynamic_cast<Type*>($1), $2); }
-            | Type ID ASSIGN Exp SC                                    { $$ = new Statement(dynamic_cast<Type*>($1), $2, dynamic_cast<Exp*>($4)); } 
-            | ID ASSIGN Exp SC                                         { $$ = new Statement($1, dynamic_cast<Exp*>($3)); } 
+            | Type ID ASSIGN Exp SC                                    { $$ = new Statement(dynamic_cast<Type*>($1), $2, dynamic_cast<Expression*>($4)); } 
+            | ID ASSIGN Exp SC                                         { $$ = new Statement($1, dynamic_cast<Expression*>($3)); } 
             | Call SC                                                  { $$ = new Statement(dynamic_cast<Call*>($1)); }
             | RETURN SC                                                {} 
-            | IF LPAREN MakeExp RPAREN ADDSCOPE Statement REMOVESCOPE    { $$ = new Statement("IF", dynamic_cast<Exp*>($3)); } 
+            | IF LPAREN MakeExp RPAREN ADDSCOPE Statement REMOVESCOPE    { $$ = new Statement("IF", dynamic_cast<BooleanExpression*>($3)); } 
             | IF LPAREN MakeExp RPAREN ADDSCOPE Statement ELSE                 
-                                                                        { $$ = new Statement("ELF", dynamic_cast<Exp*>($3)); stackTable.popScope(); } ADDSCOPE Statement REMOVESCOPE {}                        
-            | WHILE LPAREN Exp RPAREN {stackTable.pushScope(true);}     { $$ = new Statement("WHILE", dynamic_cast<Exp*>($3)); } Statement REMOVESCOPE {}
+                                                                        { $$ = new Statement("ELF", dynamic_cast<BooleanExpression*>($3)); stackTable.popScope(); } ADDSCOPE Statement REMOVESCOPE {}                        
+            | WHILE LPAREN Exp RPAREN {stackTable.pushScope(true);}     { $$ = new Statement("WHILE", dynamic_cast<BooleanExpression*>($3)); } Statement REMOVESCOPE {}
             | BREAK SC                                                 { $$ = new Statement($1); }
             | CONTINUE SC                                              { $$ = new Statement($1); }
 
-Call:   ID LPAREN Exp RPAREN                                           { $$ = new Call($1, dynamic_cast<Exp*>($3));} 
+Call:   ID LPAREN Exp RPAREN                                           { $$ = new Call($1, dynamic_cast<BooleanExpression*>($3));} 
 
 Type:   INT                                                            { $$ = new Type("INT"); }
         | BYTE                                                         { $$ = new Type("BYTE"); } 
         | BOOL                                                         { $$ = new Type("BOOL"); }
 
-Exp:    LPAREN Exp RPAREN                                              { $$ = new Exp(dynamic_cast<Exp*>($2)); }      
-        | Exp ADD Exp                                                  { $$ = new Exp($1, $3, "BINOP"); }
-        | Exp SUB Exp                                                  { $$ = new Exp($1, $3, "BINOP"); } 
-        | Exp DIVIDE Exp                                               { $$ = new Exp($1, $3, "BINOP"); }
-        | Exp MULTIPLY Exp                                             { $$ = new Exp($1, $3, "BINOP"); }
-        | ID                                                           { $$ = new Exp($1, "ID"); } 
-        | Call                                                         { $$ = new Exp($1, "CALL"); }
+Exp:    LPAREN Exp RPAREN                                              { $$ = new Expression(dynamic_cast<Expression*>($2)); }      
+        | Exp ADD Exp                                                  { $$ = new BooleanExpression($1, $3, $2); }
+        | Exp SUB Exp                                                  { $$ = new BooleanExpression($1, $3, $2); } 
+        | Exp DIVIDE Exp                                               { $$ = new BooleanExpression($1, $3, "DIV"); }
+        | Exp MULTIPLY Exp                                             { $$ = new BooleanExpression($1, $3, "MUL"); }
+        | ID                                                           { $$ = new Expression($1); } 
+        | Call                                                         { $$ = new BooleanExpression($1); }
         | NUM                                                          { $$ = new Num($1); }
         | NUM B                                                        { $$ = new NumB($1); }
         | STRING                                                       { $$ = new String($1); }
         | TRUE                                                         { $$ = new Bool($1); }
         | FALSE                                                        { $$ = new Bool($1); }
-        | NOT Exp                                                      { $$ = new Exp(dynamic_cast<Exp*>($2), true); }
-        | Exp AND Exp                                                  { $$ = new Exp($1, $3, "AND"); } 
-        | Exp OR Exp                                                   { $$ = new Exp($1, $3, "OR"); }
-        | Exp ISEQUAL Exp                                              { $$ = new Exp($1, $3, "RELOP"); }
-        | Exp RELOP Exp                                                { $$ = new Exp($1, $3, "RELOP"); }
-        | LPAREN Type RPAREN Exp                                       { $$ = new Exp(dynamic_cast<Type*>($2), dynamic_cast<Exp*>($4)); }
+        | NOT Exp                                                      { $$ = new BooleanExpression(dynamic_cast<BooleanExpression*>($2)); }
+        | Exp AND Exp                                                  { $$ = new BooleanExpression($1, $3, "AND"); } 
+        | Exp OR Exp                                                   { $$ = new BooleanExpression($1, $3, "OR"); }
+        | Exp ISEQUAL Exp                                              { $$ = new BooleanExpression($1, $3, "RELOP"); }
+        | Exp RELOP Exp                                                { $$ = new BooleanExpression($1, $3, "RELOP"); }
+        | LPAREN Type RPAREN Exp                                       { $$ = new Expression(dynamic_cast<Type*>($2), dynamic_cast<Expression*>($4)); }
 
 ;
 ///pushScope///
