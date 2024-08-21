@@ -1,14 +1,15 @@
 %{
-#include <iostream>
-#include "hw3_output.hpp"
 #include "ProgramTypes.hpp"
+
 extern int yylex();
 extern int yylineno;
+extern char* yytext;
 extern StackTable stackTable;
-int yyerror(const char *s);
+void yyerror(const char* message);
+
 %}
 
-%token INT BYTE B BOOL TRUE FALSE IF RETURN WHILE BREAK CONTINUE SC ID NUM STRING
+%token INT BYTE B BOOL TRUE FALSE IF RETURN WHILE BREAK CONTINUE SC ID STRING NUM
 
 %right ASSIGN 
 %left OR
@@ -17,71 +18,77 @@ int yyerror(const char *s);
 %left RELOP
 %left ADD SUB
 %left MULTIPLY DIVIDE
-%right ELSE
 %right NOT
-%left LPAREN RPAREN LBRACE RBRACE 
+%right LPAREN
+%left RPAREN
+%right LBRACE
+%left RBRACE
+%right ELSE   
 
 %%
 Program: Statements                                                    { stackTable.popScope(); }                                                                               
 Statements: Statement                                                  { $$ = new Statements(dynamic_cast<Statement*>($1)); }
-            | Statements Statement                                     { $$ = new Statements(dynamic_cast<Statements*>($1), dynamic_cast<Statement*>($2)); } 
+            | Statements Statement                                     { $$ = new Statements(dynamic_cast<Statements*>($1), dynamic_cast<Statement*>($2)); }
                                                                         
-Statement: LBRACE {stackTable.pushScope(false, null)} Statements {stackTable.popScope()} RBRACE 
-                                                                       { $$ = new Statement(dynamic_cast<Statements*>($2)); } 
-            | Type ID SC                                               { $$ = new Statement(typeToString($1), $2); }
-            | Type ID ASSIGN Exp SC                                    { $$ = new Statement(typeToString($1), $2, dynamic_cast<Expression*>($4), true); } 
-            | ID ASSIGN Exp SC                                         { $$ = new Statement($1, dynamic_cast<Expression*>($3)); } 
+Statement: LBRACE ADDSCOPE Statements REMOVESCOPE RBRACE               { $$ = new Statement(dynamic_cast<Statement*>($3)); } 
+            | Type ID SC                                               { $$ = new Statement(dynamic_cast<Type*>($1), $2); }
+            | Type ID ASSIGN Exp SC                                    { $$ = new Statement(dynamic_cast<Type*>($1), $2, dynamic_cast<Exp*>($4)); } 
+            | ID ASSIGN Exp SC                                         { $$ = new Statement($1, dynamic_cast<Exp*>($3)); } 
             | Call SC                                                  { $$ = new Statement(dynamic_cast<Call*>($1)); }
             | RETURN SC                                                {} 
-            | IF LPAREN Exp RPAREN {stackTable.pushScope(false, null)} Statement %prec IF                  
-                                                                       { $$ = new Statement(null, dynamic_cast<Expression*>($3), false); stackTable.popScope(); }
-            | IF LPAREN Exp RPAREN {stackTable.pushScope(false, null)} Statement ELSE Statement            
-                                                                       { $$ = new Statement(null, dynamic_cast<Expression*>($3), false); stackTable.popScope(); }
-            | WHILE LPAREN Exp RPAREN {stackTable.pushScope(true,null)} Statement                        
-                                                                       { $$ = new Statement(null, dynamic_cast<Expression*>($3), false); stackTable.popScope(); } 
-            | BREAK SC                                                 { $$ = new Statement(dynamic_cast<Node*>($1)->getValue())}
-            | CONTINUE SC                                              { $$ = new Statement(dynamic_cast<Node*>($1)->getValue())}
+            | IF LPAREN MakeExp RPAREN ADDSCOPE Statement REMOVESCOPE    { $$ = new Statement("IF", dynamic_cast<Exp*>($3)); } 
+            | IF LPAREN MakeExp RPAREN ADDSCOPE Statement ELSE                 
+                                                                        { $$ = new Statement("ELF", dynamic_cast<Exp*>($3)); stackTable.popScope(); } ADDSCOPE Statement REMOVESCOPE {}                        
+            | WHILE LPAREN Exp RPAREN {stackTable.pushScope(true);}     { $$ = new Statement("WHILE", dynamic_cast<Exp*>($3)); } Statement REMOVESCOPE {}
+            | BREAK SC                                                 { $$ = new Statement($1); }
+            | CONTINUE SC                                              { $$ = new Statement($1); }
 
-Call:   ID LPAREN Exp RPAREN                                           { $$ = new Call($1, dynamic_cast<Expression*>($3));} 
+Call:   ID LPAREN Exp RPAREN                                           { $$ = new Call($1, dynamic_cast<Exp*>($3));} 
 
-Type:   INT                                                            { $$ = new Type("INT") }
-        | BYTE                                                         { $$ = new Type("BYTE") } 
-        | BOOL                                                         { $$ = new Type("BOOL") }
+Type:   INT                                                            { $$ = new Type("INT"); }
+        | BYTE                                                         { $$ = new Type("BYTE"); } 
+        | BOOL                                                         { $$ = new Type("BOOL"); }
 
-Exp:    LPAREN Exp RPAREN                                              { $$ = new Expression(dynamic_cast<Expression*>($2)); }      
-        | Exp ADD Exp                                                  { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "ADD"); }
-        | Exp SUB Exp                                                  { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "SUB"); } 
-        | Exp DIVIDE Exp                                               { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "DIVIDE"); }
-        | Exp MULTIPLY Exp                                             { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "MULTIPLY"); }
-        | ID                                                           { $$ = new Expression($1); } 
-        | Call                                                         { $$ = new Expression(dynamic_cast<Call*>($1)); }
-        | NUM                                                          { $$ = new Expression($1, INT); }
-        | NUM B                                                        { $$ = new Expression($1, BYTE); }
-        | STRING                                                       { $$ = new Expression($1, STRING); }
-        | TRUE                                                         { $$ = new Expression($1, BOOL); }
-        | FALSE                                                        { $$ = new Expression($1, BOOL); }
-        | NOT Exp                                                      { $$ = new Expression(dynamic_cast<Expression*>($2), true); }
-        | Exp AND Exp                                                  { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "AND"); } 
-        | Exp OR Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "OR"); }
-        | Exp EQ Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "=="); }
-        | Exp NE Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "!="); }
+Exp:    LPAREN Exp RPAREN                                              { $$ = new Exp(dynamic_cast<Exp*>($2)); }      
+        | Exp ADD Exp                                                  { $$ = new Exp($1, $3, "BINOP"); }
+        | Exp SUB Exp                                                  { $$ = new Exp($1, $3, "BINOP"); } 
+        | Exp DIVIDE Exp                                               { $$ = new Exp($1, $3, "BINOP"); }
+        | Exp MULTIPLY Exp                                             { $$ = new Exp($1, $3, "BINOP"); }
+        | ID                                                           { $$ = new Exp($1, "ID"); } 
+        | Call                                                         { $$ = new Exp($1, "CALL"); }
+        | NUM                                                          { $$ = new Num($1); }
+        | NUM B                                                        { $$ = new NumB($1); }
+        | STRING                                                       { $$ = new String($1); }
+        | TRUE                                                         { $$ = new Bool($1); }
+        | FALSE                                                        { $$ = new Bool($1); }
+        | NOT Exp                                                      { $$ = new Exp(dynamic_cast<Exp*>($2), true); }
+        | Exp AND Exp                                                  { $$ = new Exp($1, $3, "AND"); } 
+        | Exp OR Exp                                                   { $$ = new Exp($1, $3, "OR"); }
+        | Exp ISEQUAL Exp                                              { $$ = new Exp($1, $3, "RELOP"); }
+        | Exp RELOP Exp                                                { $$ = new Exp($1, $3, "RELOP"); }
+        | LPAREN Type RPAREN Exp                                       { $$ = new Exp(dynamic_cast<Type*>($2), dynamic_cast<Exp*>($4)); }
 
-        | Exp GE Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "GE"); }
-        | Exp GT Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "GT"); }
-        | Exp LE Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "LE"); }
-        | Exp LT Exp                                                   { $$ = new Expression(dynamic_cast<Expression*>($1), dynamic_cast<Expression*>($3), "LT"); }
-
-        | LPAREN Type RPAREN Exp                                       { $$ = new Expression(dynamic_cast<Expression*>($4), typeToString($2)); }
-
+;
+///pushScope///
+ADDSCOPE:                                                               {
+                                                                            stackTable.pushScope(false);
+                                                                        }
+;
+///popScope///
+REMOVESCOPE:                                                            {
+                                                                            stackTable.popScope();
+                                                                        }
+                                                                        ;
+MakeExp: Exp                                                            {$$ = new Exp(dynamic_cast<Exp*>($1));}
+;
 %%
-StackTable stackTable; = StackTable();
-
-int yyerror(const char *s) {
-    output::errorSyn(yylineno);
-    exit(0);
-    }
+StackTable stackTable = StackTable();
 
 int main() {
     return yyparse();
 }
 
+void yyerror(const char *s) {
+    output::errorSyn(yylineno);
+    exit(0);
+}

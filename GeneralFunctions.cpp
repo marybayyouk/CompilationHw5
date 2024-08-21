@@ -17,6 +17,23 @@ vector<string> convertVectorToUpperCase(vector<string>& toUpper) {
 }
 
 bool LegalType(string typeOne, string typeTwo) {
+    if ((typeOne == "INT" && typeTwo == "BYTE") || (typeOne == typeTwo)) {
+        return true;
+    } 
+    return false;
+}
+
+
+bool isLegalFunc(string func, bool functionType) {
+    if (func == "print" || func == "printi" || func == "readi") {
+        if (!functionType) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool LegalType(string typeOne, string typeTwo) {
     if (typeOne == "INT" && typeTwo == "BYTE") {
         return true;
     } else if (typeOne == typeTwo) {

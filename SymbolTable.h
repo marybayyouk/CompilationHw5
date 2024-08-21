@@ -4,11 +4,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "hw3_output.hpp"
 
 using std::string;
 using std::vector;
-
-string upperCase(string str);
 
 struct NameTypeInfo {
     string type;
@@ -51,9 +50,9 @@ public:
 };
 
 class StackTable {
+public:
     vector<SymbolTable*> scopes;
     vector<int> offsets;
-public:
     StackTable();
     ~StackTable();
     void pushScope(bool isLoop, string retType);

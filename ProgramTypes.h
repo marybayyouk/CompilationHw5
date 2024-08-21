@@ -1,12 +1,15 @@
 #include <string>
+#include <vector>
+#include <iostream>
 #include "SymbolTable.h"
 #include "GeneralFunctions.h"
 #include "cg.hpp"
 #include "CodeGenerator.h"
 #include "hw3_output.hpp"
 
+#define YYSTYPE Node*
 using std::vector;
-class Expression;
+static vector<pair<string, string>> beginEndLabels;
 
 bool isBool(Expression* exp);
 
@@ -15,19 +18,25 @@ class Node {
     std::string type;
     string reg;
 public:
-    Node() : value(""), type("") , reg("") {};
-    Node(string value, string type) : value(value), type(type), reg("") {};
-    Node(string value, string type, string reg) : value(value), type(type), reg(reg) {};
+    Node(string val = "", string type = "", string reg = "") : value(val), type(type), reg(reg) {};
     virtual ~Node() {};
-    virtual void print() = 0;
-    /// GETTERS
     std::string getValue() const { return value; }
     std::string getType() const { return type; }
     string getReg() const { return reg; }   
-    /// SETTERS
     void setValue(std::string value) { this->value = value; }
     void setType(std::string type) { this->type = type; }
     void setReg(std::string reg) { this->reg = reg; }
+};
+
+class Type : public Node {
+public:
+    Type(std::string type) : Node("",type) {};
+};
+
+class iD : public Node {
+public:
+    iD(Node* id) : Node(id->getValue(), "ID") {
+    }
 };
 
 class Call : public Node {
@@ -35,7 +44,7 @@ class Call : public Node {
     string falseLabel;
     string nextLabel;
 public:
-    Call(string type, Node* terminalID); 
+    Call(Node* terminalID, Expression* exp);
     ~Call() = default;
     string getTrueLabel() const { return trueLebel; }
     string getFalseLabel() const { return falseLabel; } 
@@ -50,10 +59,10 @@ class BooleanExpression : public Node {
     string falseLabel; //target label for a jump when condition B evaluates to false
 public:
     BooleanExpression(bool terminalBool); // BooleanExpression -> BOOL
-    BooleanExpression(Node* exp); // BooleanExpression -> Exp
     BooleanExpression(Call* call); // BooleanExpression -> Call
+    BooleanExpression(Node* exp); // BooleanExpression -> Exp
     BooleanExpression(Node* exp, bool _); // BooleanExpression -> NOT BooleanExpression
-    BooleanExpression(Node* leftExp, Node* rightExp, string op); // BooleanExpression -> Exp RELOP/AND/OR Exp
+    BooleanExpression(Node* leftExp, Node* rightExp, const string op); // BooleanExpression -> Exp RELOP/AND/OR Exp
     // BooleanExpression -> ( BooleanExpression )
     BooleanExpression(BooleanExpression* exp) : Node(exp->getValue(), exp->getType(), exp->getReg()) {};
     ~BooleanExpression() = default;
@@ -64,45 +73,70 @@ public:
 };
 
 class Expression : public Node {    
+    bool isFunction;
 public:
-    Expression();
     Expression(string reg) : Node("", "", reg) {};    
     Expression(Node* terminalExp); //𝐸𝑥𝑝 → 𝐼𝐷
-    Expression(Node* exp, string type); //𝐸𝑥𝑝 → 𝐿𝑃𝐴𝑅𝐸𝑁 𝑇𝑦𝑝𝑒 𝑅𝑃𝐴𝑅𝐸𝑁 𝐸𝑥𝑝
-    Expression(Node* terminalExp, string type); //Exp->BOOL/BYTE/INT/NUM/STRING    *****BOOL SHOULD BE REMOVED*****
-
+    Expression(Type* type, Expression* exp); //𝐸𝑥𝑝 → 𝐿𝑃𝐴𝑅𝐸𝑁 𝑇𝑦𝑝𝑒 𝑅𝑃𝐴𝑅𝐸𝑁 𝐸𝑥𝑝
+    Expression(string value, string type, bool isFunc=false); //Exp->(SON'S C'TOR) BOOL/BYTE/INT/NUM/STRING    *****BOOL SHOULD BE REMOVED*****
+    Expression(Node* leftExp, Node* rightExp, const string op); // Exp -> Exp Binop Exp
+    ~Expression() = default;
+    bool isFunc() const { return isFunction; }
+    void setIsFunc(bool isFunction) { this->isFunction = isFunction; }
     ////////THEESE C'TORS WILL BE DELETED
     //Expression(Node* exp); //𝐸𝑥𝑝 → 𝐿𝑃𝐴𝑅𝐸𝑁 𝐸𝑥𝑝 𝑅𝑃𝐴𝑅𝐸𝑁
     Expression(Node* exp, bool _); //𝐸𝑥𝑝 → Not Exp
-    Expression(Node* leftExp, Node* rightExp, string op); // Exp -> Exp And / Or Exp
-    ~Expression() = default;
+};
+
+class Bool : public Expression {
+public:
+    Bool(Node* exp) : Expression(exp->getValue(), "BOOL") {};
+};
+
+class Num : public Expression {
+public:
+    Num(Node* exp) : Expression(exp->getValue(), "INT") {};
+};
+
+class NumB : public Expression {
+public:
+    NumB(Node* exp);
+};
+
+class String : public Expression {
+public:
+    String(Node* exp) : Expression(exp->getValue(), "STRING") {};
 };
 
 
 class Statement : public Node {
     string nextLabel; //the label of the next code to execute after Statement
 public:
-    Statement() : Node(), nextLabel(buffer.freshLabel()) {};   
-    Statement(std::string value); // Statement -> BREAK / CONTINUE
+    Statement() : Node(), nextLabel(buffer.freshLabel()) {};  
+    Statement(Statement* Statment) {}; // Statement -> Statement
+    Statement(Node* BCNode); // Statement -> BREAK / CONTINUE
     Statement(Call * call); // Statement -> Call SC
-    Statement(string type,Node * id); // Statement -> Type ID SC  
-    Statement(string type, Node * id, Expression * exp); // Statement -> Type ID Assign Exp SC
+  //  Statement(std::string value); // Statement -> BREAK / CONTINUE needs evaluation code
+    Statement(const string cond, BooleanExpression* exp); // Statement -> IF | IF-ELSE | WHILE LP BooleanExpression RP Statment
     Statement(Node * id, Expression * exp); // Statement -> ID Assign Exp SC
-    Statement(Statments* Statments); // Statement -> { Statements }
-    //Statement(Expression* exp); // Statement -> IF ( Exp ) Statement
-
+    Statement(Type* type,Node * id); // Statement -> Type ID SC  
+    Statement(Type* type, Node * id, Expression * exp); // Statement -> Type ID Assign Exp SC
     string getNextLabel() const { return nextLabel; }
     void setNextLabel(std::string label) { nextLabel = label; }
 };
 
-class Statments : public Node {
+class Statements : public Node {
+    string nextLabel; //the label of the next code to execute after Statments
     public:
-    Statments(Statement* statement) : Node() { /*statement->setNextLabel(buffer.freshLabel());*/ }; // Statements -> Statement
+    Statements(Statement* statement) : Node() { /*statement->setNextLabel(buffer.freshLabel());*/ }; // Statements -> Statement
     // Statements -> Statements Statement
-    Statments (Statement* statement, Statments* statments) : Node() { 
-        //statement->setNextLabel(buffer.freshLabel());
+    Statements (Statements* statements, Statement* statement) : Node() { 
+        statement->setNextLabel(buffer.freshLabel());
+        statements->setNextLabel(statement->getNextLabel());
     }; 
-    ~Statments() = default;
+    ~Statements() = default;
+    string getNextLabel() const { return nextLabel; }
+    void setNextLabel(std::string label) { nextLabel = label; }
 };
 
 class Program : public Node {
