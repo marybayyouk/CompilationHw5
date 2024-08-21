@@ -6,7 +6,6 @@
 extern StackTable scopes;
 
 
-
 void CodeGenerator::defineLable(const string& label) {
     buffer.emit(label + ":");
 }
@@ -96,6 +95,16 @@ void CodeGenerator::generateBinaryInst(const string& expType, const string& lhs,
     else if(inst == "RELOP") {
         op = getRelopOp(op);
         generateIcmp(op, lhs, rhs);
+    }
+}
+
+void CodeGenerator::generateUnaryInst(const string& expType, const string& reg, string op) {
+    string resReg = freshReg();
+    if (op == "NOT") {
+        buffer.emit(resReg + " = xor i1 1, " + reg);
+    }
+    else if (op == "NEG") {
+        buffer.emit(resReg + " = sub i32 0, " + reg);
     }
 }
 

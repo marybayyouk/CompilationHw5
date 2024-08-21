@@ -5,6 +5,9 @@ using namespace std;
 extern CodeBuffer buffer;
 extern int yylineno;
 
+string upperCase(string str);
+vector<string> convertVectorToUpperCase(vector<string> toUpper);
+bool LegalType(string typeOne, string typeTwo);
 string getBinopOp(string op); ///get binary operation
 string getRelopOp(string op); ///get relational operation
 string freshReg(); ///allocate new register

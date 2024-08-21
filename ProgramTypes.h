@@ -9,8 +9,6 @@ using std::vector;
 class Expression;
 
 bool isBool(Expression* exp);
-vector<string> convertVectorToUpperCase(vector<string> toUpper);
-bool LegalType(string typeOne, string typeTwo);
 
 class Node {
     std::string value;
@@ -32,57 +30,52 @@ public:
     void setReg(std::string reg) { this->reg = reg; }
 };
 
-class Type : public Node {
-public:
-    Type(std::string type) : Node("",type) {};
-};
-
-class Expression : public Node {    
-public:
-    Expression();
-    Expression(string reg) : Node("", "", reg) {};
-    Expression(Node* exp); //𝐸𝑥𝑝 → 𝐿𝑃𝐴𝑅𝐸𝑁 𝐸𝑥𝑝 𝑅𝑃𝐴𝑅𝐸𝑁
-    
-    Expression(Node* terminalExp); //𝐸𝑥𝑝 → 𝐼𝐷
-    Expression(Node* exp, string type); //𝐸𝑥𝑝 → 𝐿𝑃𝐴𝑅𝐸𝑁 𝑇𝑦𝑝𝑒 𝑅𝑃𝐴𝑅𝐸𝑁 𝐸𝑥𝑝
-    Expression(Node* terminalExp, string type); //Exp->BOOL/BYTE/INT/NUM/STRING
-    ////////THEESE C'TORS WILL BE DELETED
-    Expression(Node* exp, bool _); //𝐸𝑥𝑝 → Not Exp
-    Expression(Node* leftExp, Node* rightExp, string op); // Exp -> Exp And / Or Exp
-    ~Expression() = default;
-};
-
 class Call : public Node {
     string trueLebel;
     string falseLabel;
     string nextLabel;
 public:
     Call(string type, Node* terminalID); 
+    ~Call() = default;
     string getTrueLabel() const { return trueLebel; }
     string getFalseLabel() const { return falseLabel; } 
     string getNextLabel() const { return nextLabel; }
     void setTrueLabel(std::string label) { trueLebel = label; }
     void setFalseLabel(std::string label) { falseLabel = label; }
     void setNextLabel(std::string label) { nextLabel = label; }
-    ~Call() = default;
 };
 
 class BooleanExpression : public Node {
     string trueLabel;// target label for a jump when condition B evaluates to true
     string falseLabel; //target label for a jump when condition B evaluates to false
-    string nextLabel; //the label of the next code to execute after BooleanExpression
 public:
-    BooleanExpression(Node* leftExp, Node* rightExp, string op); // BooleanExpression -> Exp RELOP/AND/OR Exp
-    BooleanExpression(Node* exp, bool _); // BooleanExpression -> NOT BooleanExpression
+    BooleanExpression(bool terminalBool); // BooleanExpression -> BOOL
+    BooleanExpression(Node* exp); // BooleanExpression -> Exp
     BooleanExpression(Call* call); // BooleanExpression -> Call
+    BooleanExpression(Node* exp, bool _); // BooleanExpression -> NOT BooleanExpression
+    BooleanExpression(Node* leftExp, Node* rightExp, string op); // BooleanExpression -> Exp RELOP/AND/OR Exp
+    // BooleanExpression -> ( BooleanExpression )
+    BooleanExpression(BooleanExpression* exp) : Node(exp->getValue(), exp->getType(), exp->getReg()) {};
     ~BooleanExpression() = default;
     string getTrueLabel() const { return trueLabel; }
     string getFalseLabel() const { return falseLabel; }
-    string getNextLabel() const { return nextLabel; }
     void setTrueLabel(std::string label) { trueLabel = label; } 
     void setFalseLabel(std::string label) { falseLabel = label; }
-    void setNextLabel(std::string label) { nextLabel = label; }
+};
 
+class Expression : public Node {    
+public:
+    Expression();
+    Expression(string reg) : Node("", "", reg) {};    
+    Expression(Node* terminalExp); //𝐸𝑥𝑝 → 𝐼𝐷
+    Expression(Node* exp, string type); //𝐸𝑥𝑝 → 𝐿𝑃𝐴𝑅𝐸𝑁 𝑇𝑦𝑝𝑒 𝑅𝑃𝐴𝑅𝐸𝑁 𝐸𝑥𝑝
+    Expression(Node* terminalExp, string type); //Exp->BOOL/BYTE/INT/NUM/STRING    *****BOOL SHOULD BE REMOVED*****
+
+    ////////THEESE C'TORS WILL BE DELETED
+    //Expression(Node* exp); //𝐸𝑥𝑝 → 𝐿𝑃𝐴𝑅𝐸𝑁 𝐸𝑥𝑝 𝑅𝑃𝐴𝑅𝐸𝑁
+    Expression(Node* exp, bool _); //𝐸𝑥𝑝 → Not Exp
+    Expression(Node* leftExp, Node* rightExp, string op); // Exp -> Exp And / Or Exp
+    ~Expression() = default;
 };
 
 

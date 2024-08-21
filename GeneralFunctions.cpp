@@ -1,5 +1,31 @@
 #include "GeneralFunctions.h"
 
+
+string upperCase(string str) {
+    for (char& c : str) {
+        c = toupper(c);
+    }
+    return str;
+}
+
+vector<string> convertVectorToUpperCase(vector<string>& toUpper) {
+    vector<string> toRet;
+    for (string name : toUpper) {
+        toRet.push_back(upperCase(name));
+    }
+    return toRet;
+}
+
+bool LegalType(string typeOne, string typeTwo) {
+    if (typeOne == "INT" && typeTwo == "BYTE") {
+        return true;
+    } else if (typeOne == typeTwo) {
+        return true;
+    }
+    // need to check 3rd legal assignment (byte) (int) with casting
+    return false;
+}
+
 string getBinopOp(string op) {
     if (op == "ADD") {
         return "add";

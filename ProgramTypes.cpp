@@ -14,25 +14,6 @@ bool isBool(Expression* exp) {
     return true;
 }
 
-vector<string> convertVectorToUpperCase(vector<string>& toUpper) {
-    vector<string> toRet;
-    for (string name : toUpper) {
-        toRet.push_back(upperCase(name));
-    }
-    return toRet;
-}
-
-bool LegalType(string typeOne, string typeTwo) {
-    if (typeOne == "INT" && typeTwo == "BYTE") {
-        return true;
-    } else if (typeOne == typeTwo) {
-        return true;
-    }
-    // need to check 3rd legal assignment (byte) (int) with casting
-    return false;
-}
-
-
 ///////////////////////////////////////BooleanExpression///////////////////////////////////////
 
 // BooleanExpression -> Exp RELOP/AND/OR Exp
@@ -49,20 +30,20 @@ BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, string op) {
         setType("BOOL");
         setTrueLabel(left->getTrueLabel());
         setFalseLabel(right->getFalseLabel());
-        buffer.emit(getValue() + " = or i1 " + left->getValue() + ", " + right->getValue());
+        codeGenerator.generateBinaryInst(this->getType(), left->getValue(), right->getValue(), op, "BINOP");
+
     } 
     else if(op == "AND") {
         setType("BOOL");
         setTrueLabel(right->getTrueLabel());
         setFalseLabel(left->getFalseLabel());
-        buffer.emit(getValue() + " = and i1 " + left->getValue() + ", " + right->getValue());
+        codeGenerator.generateBinaryInst(this->getType(), left->getValue(), right->getValue(), op, "BINOP");
     } 
     else if (op == "GT" || op == "GE" || op == "LT" || op == "LE" || op == "EQ" || op == "NE") {
         setType("BOOL");
         setTrueLabel(allocateLable("true"));
         setFalseLabel(allocateLable("false"));
-        buffer.emit(getValue() + " = icmp " + getRelopOp(op) + " i32 " + left->getValue() + ", " + right->getValue());
-        buffer.emit("br i1 " + getValue() + ", label %" + getTrueLabel() + ", label %" + getFalseLabel());
+        codeGenerator.generateBinaryInst(this->getType(), left->getValue(), right->getValue(), op, "RELOP");
     }
     
     else {
@@ -70,10 +51,6 @@ BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, string op) {
         exit(0);
     }
 }
-
-
-//////////////////////////////////////////Expression///////////////////////////////////////////
-Expression::Expression() : Node("","VOID") {};
 
 // 𝐸𝑥𝑝 → 𝑁𝑜𝑡 𝐸𝑥𝑝
 Expression::Expression(Node* exp, bool _) : Node(exp->getValue(), "") {
@@ -86,7 +63,22 @@ Expression::Expression(Node* exp, bool _) : Node(exp->getValue(), "") {
 }
 
 // 𝐸𝑥𝑝 → 𝐿𝑃𝐴𝑅𝐸𝑁 𝐸𝑥𝑝 𝑅𝑃𝐴𝑅𝐸𝑁
-Expression::Expression(Node *exp) : Node(exp->getValue(), "") {};
+BooleanExpression::BooleanExpression(Node *exp) {
+    if(exp->getType() == "BOOL") {
+        BooleanExpression* boolExp = dynamic_cast<BooleanExpression *> (exp);
+        setType("BOOL");
+        setValue(boolExp->getValue());
+        setTrueLabel(boolExp->getTrueLabel());
+        setFalseLabel(boolExp->getFalseLabel());
+        setReg(boolExp->getReg());
+    }
+    else {
+        // initialize the expression with the value of the expression - regular expression -
+        setValue(exp->getValue());
+        setType("");
+        setReg(exp->getReg());
+    }
+}
 
 // EXP -> Call --------GENERATION IS DONE NOTHING TO DO--------
 BooleanExpression::BooleanExpression(Call* call) {
@@ -95,8 +87,11 @@ BooleanExpression::BooleanExpression(Call* call) {
     setReg(call->getReg());
     setTrueLabel(call->getTrueLabel());
     setFalseLabel(call->getFalseLabel());
-    setNextLabel(call->getNextLabel());
 }
+
+
+//////////////////////////////////////////Expression///////////////////////////////////////////
+Expression::Expression() : Node("","VOID") {};
 
 // EXP -> ID --------GENERATION IS DONE--------
 Expression::Expression(Node* terminalExp) {
@@ -113,7 +108,7 @@ Expression::Expression(Node* terminalExp) {
     setReg(reg); 
 }
 
-// Exp -> LPAREN Exp RPAREN --------GENERATION IS DONE--------
+// Exp -> LPAREN Type RPAREN Exp --------GENERATION IS DONE--------
 Expression::Expression(Node* toExp, string type) {
     Expression* exp = dynamic_cast<Expression *> (toExp);
     if(!LegalType(exp->getType(), type)){
@@ -148,7 +143,6 @@ Expression::Expression(Node* leftExp, Node* rightExp, string op) {
     } 
     if (op == "AND" || op == "OR") {
         setType("BOOL");
-        codeGenerator.generateBinaryInst(this->getType(), left->getValue(), right->getValue(), op, "BINOP");
     } else {
         output::errorMismatch(yylineno);
         exit(0);

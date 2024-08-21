@@ -23,6 +23,7 @@ public:
     string generateIcmp(const string& op, const string& lhs, const string& rhs);  ///generate iCompare operation "RELOP"
     bool generateBoolOperator(const string& lhs, const string& rhs, string op); ///generate boolean operation "AND/OR"
     void generateBinaryInst(const string& expType, const string& lhs, const string& rhs, string op, string inst); ///generate Binop/Relop instruction
+    void generateUnaryInst(const string& expType, const string& reg, string op); ///generate unary instruction
     void generateCondBranch(const string& condReg, const string& trueLabel, const string& falseLabel); ///generate conditional branch
     void generateUncondBranch(const string& label); ///generate unconditional branch
     void generateFunctionCall(Node* terminalID); ///generate function call

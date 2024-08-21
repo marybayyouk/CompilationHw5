@@ -1,13 +1,7 @@
 #include "SymbolTable.h"
 #include "hw3_output.hpp"
+#include "GeneralFunctions.h"
 
-
-string upperCase(string str) {
-    for (char& c : str) {
-        c = toupper(c);
-    }
-    return str;
-}
 
 /////////////////////////////////////////////////SymbolTable//////////////////////////////////////////////////////////
 SymbolTable::SymbolTable(int maxOff,bool isloop, string retType = "") : symbols() { 
