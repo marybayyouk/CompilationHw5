@@ -99,7 +99,6 @@ BooleanExpression::BooleanExpression(Call* call) {
     setFalseLabel(call->getFalseLabel());
 }
 
-
 //////////////////////////////////////////Expression///////////////////////////////////////////
 
 // EXP -> ID --------GENERATION IS DONE--------
@@ -118,7 +117,8 @@ Expression::Expression(Node* terminalExp) {
 }
 
 // Exp -> LPAREN Type RPAREN Exp --------GENERATION IS DONE--------
-Expression::Expression(Type* type, Expression* exp) {
+Expression::Expression(Type* type, Node* exp) {
+    Expression* e = dynamic_cast<Expression *> (exp);
     if((exp->getType() != "INT" && exp->getType() != "BYTE") || (type->getType() != "INT" && type->getType() != "BYTE")){
         output::errorMismatch(yylineno);
         exit(0);
@@ -126,8 +126,8 @@ Expression::Expression(Type* type, Expression* exp) {
     setType(type->getType());
     setValue(exp->getValue());
 
-    string reg = emitTruncation(exp->getReg(), type->getType(), exp->getType(), true);
-    setReg(reg);
+    //string reg = emitTruncation(exp->getReg(), type->getType(), exp->getType(), true);
+    //setReg(reg);
 }
 
 // Exp->BYTE/INT/NUM/STRING --------GENERATION IS DONE--------
@@ -242,7 +242,18 @@ Statement::Statement(Type* type, Node * id) {
     }
     id->setType(type->getType());
     stackTable.addSymbolToProgram(id->getValue(), false, type->getType(), {});
-    codeGenerator.generateGlobalVar(id->getValue(), type->getType());
+
+    string ptr_reg = freshReg();
+    if(type->getType() == "INT" || type->getType() == "BYTE") {
+        buffer.emit(id->getValue() + " = alloca i32");
+        buffer.emit("store i32 0, i32* %" + ptr_reg);
+    }
+    else if(type->getType() == "BOOL") {
+        buffer.emit(id->getValue() + " = alloca i32");
+        string regZxt = freshReg();
+        buffer.emit(regZxt + " = zext i1 " + id->getReg() + " to i32");
+        buffer.emit("store i32 " + regZxt + ", i32* " + ptr_reg);
+    }
 }
 
 // Statement -> Type ID Assign Exp SC
@@ -265,6 +276,7 @@ Statement::Statement(Type* type, Node * id, Expression * exp) {
     }
     stackTable.addSymbolToProgram(id->getValue(), false, type->getType(), {});
     id->setType(type->getType());
+    codeGenerator.generateStore(stackTable.findSymbol(id->getValue())->getOffset(), exp->getReg(), type->getType());
 }
 
 // Statement -> ID Assign Exp SC
@@ -286,6 +298,7 @@ Statement::Statement(Node * id, Expression * exp) {
         output::errorUndef(yylineno, exp->getValue());
         exit(0);
     }
+    codeGenerator.emitTypesLiteral(exp, id->getType());
 }
 
 // Statement -> IF|IF-ELSE|WHILE LP EXP RP SS 
@@ -329,17 +342,3 @@ Statement::Statement(Statement* Statement) {
     //open new scope
     stackTable.pushScope(false);
 }
-
-
-
-// Exp -> NOT Exp
-// BooleanExpression::BooleanExpression(Node* exp) : Node(exp->getValue(), "") {
-//     if (!stackTable.isDefinedInProgram(exp->getValue())) {
-//         output::errorUndef(yylineno, exp->getValue());
-//     }
-//     if (exp->getType() != "BOOL") {
-//         output::errorMismatch(yylineno);
-//         exit(0);
-//     }
-//     setType("BOOL");
-// }

@@ -43,6 +43,17 @@ bool LegalType(string typeOne, string typeTwo) {
     return false;
 }
 
+string TypeToLLVM(string type) {
+    if (type == "INT") {
+        return "i32";
+    } else if (type == "BYTE") {
+        return "i8";
+    } else if (type == "BOOL") {
+        return "i1";
+    }
+    return "i8*";
+}
+
 string getBinopOp(string op) {
     if (op == "ADD") {
         return "add";

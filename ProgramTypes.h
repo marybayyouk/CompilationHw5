@@ -79,7 +79,7 @@ class Expression : public Node {
 public:
     Expression(string reg) : Node("", "", reg) {};    
     Expression(Node* terminalExp); // Expression -> ID
-    Expression(Type* type, Expression* exp); // Expression -> LPAREN Type RPAREN Exp
+    Expression(Type* type, Node* exp); // Expression -> LPAREN Type RPAREN Exp
     Expression(string value, string type, bool isFunc=false); //Expression->(SON'S C'TOR) BOOL/BYTE/INT/NUM/STRING    *****BOOL SHOULD BE REMOVED*****
     Expression(Node* leftExp, Node* rightExp, const string op); // Expression -> Expression Binop Expression
     ~Expression() = default;

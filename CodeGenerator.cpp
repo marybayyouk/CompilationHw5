@@ -42,7 +42,7 @@ void CodeGenerator::emitTypesLiteral(Expression* exp, const string& type) {
     if (type == "BYTE") ///NUMB
         buffer.emit(exp->getReg() + " = add i18 " + exp->getValue() + ", 0");
     else if (type == "BOOL") 
-        buffer.emit("br lable @");
+        buffer.emit(exp->getReg() + " = add i1 " + exp->getValue() + ", 0");
     else if (type == "INT") ///NUM
         buffer.emit(exp->getReg() + " = add i32 " + exp->getValue() + ", 0");
     else if (type == "STRING") {
@@ -117,13 +117,13 @@ void CodeGenerator::generateBinaryInst(const string& expType, const string& lhs,
     }
 }
 
-void CodeGenerator::generateUnaryInst(const string& expType, const string& reg, string op) {
+/*void CodeGenerator::generateUnaryInst(const string& expType, const string& reg, string op) {
     string resReg = freshReg();
     if (op == "NOT") 
         buffer.emit(resReg + " = xor i1 1, " + reg);
     else if (op == "NEG") 
         buffer.emit(resReg + " = sub i32 0, " + reg);
-}
+}*/
 
 void CodeGenerator::generateCondBranch(const string& condReg, const string& trueLabel, const string& falseLabel) {
     buffer.emit("br i1 " + condReg + ", label %" + trueLabel + ", label %" + falseLabel);

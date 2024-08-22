@@ -10,6 +10,7 @@ string upperCase(string str);
 vector<string> convertVectorToUpperCase(vector<string> toUpper);
 bool isLegalFunc(string func, bool functionType);
 bool LegalType(string typeOne, string typeTwo);
+string TypeToLLVM(string type);
 string getBinopOp(string op); ///get binary operation
 string getRelopOp(string op); ///get relational operation
 string freshReg(); ///allocate new register
