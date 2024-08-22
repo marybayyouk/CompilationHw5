@@ -8,9 +8,13 @@
 #include "hw3_output.hpp"
 
 #define YYSTYPE Node*
+extern CodeGenerator codeGenerator;
+class Expression;
 
 
-bool isBool(Expression* exp);
+void isBoolExp(Expression* exp); //to use in parser.ypp
+void endingLoopMarker(); //to use in parser.ypp to mark the end of a WHILE loop
+
 
 class Node {
     std::string value;
@@ -57,13 +61,13 @@ class BooleanExpression : public Node {
     string trueLabel;// target label for a jump when condition B evaluates to true
     string falseLabel; //target label for a jump when condition B evaluates to false
 public:
-    //BooleanExpression(bool terminalBool); // BooleanExpression -> True/False
-    BooleanExpression(Call* call); // BooleanExpression -> Call
-    BooleanExpression(Node* exp); // BooleanExpression -> Exp
-    BooleanExpression(Node* exp); // BooleanExpression -> NOT BooleanExpression
-    BooleanExpression(Node* leftExp, Node* rightExp, const string op); // BooleanExpression -> Exp RELOP/AND/OR Exp
-    BooleanExpression(BooleanExpression* exp) : Node(exp->getValue(), exp->getType(), exp->getReg()) {};
+    //BooleanExpression(bool terminalBool); // Exp -> True/False
+    //BooleanExpression(BooleanExpression* exp) : Node(exp->getValue(), exp->getType(), exp->getReg()) {};
+    BooleanExpression(Call* call); // Exp -> Call
+    BooleanExpression(Node* exp); // Exp -> LPAREN Exp RPAREN
+    BooleanExpression(Node* leftExp, Node* rightExp, const string op); // Exp -> Exp RELOP/AND/OR Exp
     ~BooleanExpression() = default;
+    BooleanExpression* notExpression(BooleanExpression* exp); // Exp->NOT Exp
     string getTrueLabel() const { return trueLabel; }
     string getFalseLabel() const { return falseLabel; }
     void setTrueLabel(std::string label) { trueLabel = label; } 
@@ -81,11 +85,11 @@ public:
     ~Expression() = default;
     bool isFunc() const { return isFunction; }
     void setIsFunc(bool isFunction) { this->isFunction = isFunction; }
-    //Expression(Node* exp); //𝐸𝑥𝑝 → 𝐿𝑃𝐴𝑅𝐸𝑁 𝐸𝑥𝑝 𝑅𝑃𝐴𝑅𝐸𝑁
 };
 
 class Bool : public Expression {
 public:
+    Bool(string value) : Expression(value, "BOOL") {};
     Bool(Node* exp) : Expression(exp->getValue(), "BOOL") {};
 };
 
@@ -136,7 +140,9 @@ class Statements : public Node {
 
 class Program : public Node {
 public:
-    Program() {};
+    Program() {
+        codeGenerator.emitProgramStart();
+    };
     ~Program() = default;
 };
 

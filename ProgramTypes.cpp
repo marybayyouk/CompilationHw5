@@ -2,23 +2,45 @@
 
 extern int yylineno;
 extern StackTable stackTable;
-extern CodeGenerator codeGenerator;
 using namespace std;
 
 
-bool isBool(Expression* exp) {
+void isBoolExp(Expression* exp) {
     if(exp->getType() != "BOOL") {
         output::errorMismatch(yylineno);
         exit(0);
     }
-    return true;
 }
 
+//WHILE ENDING LOOP MARKER
 void endingLoopMarker() {
     buffer.emit("br label %" + beginEndLabels.back().first);
     buffer.emit(beginEndLabels.back().second + ":");
     beginEndLabels.pop_back();
 }
+
+// Expression -> NOT Expression
+BooleanExpression* BooleanExpression::notExpression(BooleanExpression* exp) {
+    if (exp->getType() != "BOOL") {
+        output::errorMismatch(yylineno);
+        exit(0);
+    }
+    if (!stackTable.isDefinedInProgram(exp->getValue())) {
+        output::errorUndef(yylineno, exp->getValue());
+        exit(0);
+    }
+    BooleanExpression* boolExp = dynamic_cast<BooleanExpression *> (exp);
+    if (exp->getValue() == "true") {
+        boolExp->setValue("false");
+    } else {
+        boolExp->setValue("true");
+    }
+    boolExp->setType("BOOL");
+    boolExp->setTrueLabel(exp->getFalseLabel());
+    boolExp->setFalseLabel(exp->getTrueLabel());
+    return boolExp;
+}
+
 ///////////////////////////////////////BooleanExpression///////////////////////////////////////
 
 // BooleanExpression -> Exp RELOP/AND/OR Exp
@@ -48,18 +70,6 @@ BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, const string
         setFalseLabel(allocateLable("false"));  ///////need to change this
         codeGenerator.generateBinaryInst(this->getType(), left->getValue(), right->getValue(), op, "RELOP");
     }
-}
-
-// Exp -> NOT Exp
-BooleanExpression::BooleanExpression(Node* exp) : Node(exp->getValue(), "") {
-    if (!stackTable.isDefinedInProgram(exp->getValue())) {
-        output::errorUndef(yylineno, exp->getValue());
-    }
-    if (exp->getType() != "BOOL") {
-        output::errorMismatch(yylineno);
-        exit(0);
-    }
-    setType("BOOL");
 }
 
 // Exp -> LParen Exp RParen
@@ -122,7 +132,7 @@ Expression::Expression(Type* type, Expression* exp) {
 
 // Exp->BYTE/INT/NUM/STRING --------GENERATION IS DONE--------
 Expression::Expression(string value, string type, bool isFunc=false) : Node(value, type) {
-    if((type == "BYTE") && (stoi(value) > 255)){
+    if((type == "BYTE") && ((stoi(value) > 255) || (stoi(value) < 0))) {
         output::errorByteTooLarge(yylineno, value);
     }
     codeGenerator.emitTypesLiteral(this, type);
@@ -153,16 +163,14 @@ Expression::Expression(Node* leftExp, Node* rightExp, const string op) {
     }
 }
 
-
 ////////////////////////////////////////NumB////////////////////////////////////////////////////
 
 NumB::NumB(Node* expression) : Expression(expression->getValue(), "BYTE") {
-    if (stoi(expression->getValue()) >= 256) {
+    if (stoi(expression->getValue()) >= 256 || stoi(expression->getValue()) < 0) {
         output::errorByteTooLarge(yylineno, expression->getValue());
         exit(0);
     }
 }
-
 
 //////////////////////////////////////////Call//////////////////////////////////////////
 
@@ -174,19 +182,19 @@ Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "")
     }
     if ((terminalID->getValue() == "print")) {
         if (exp->getType() != "STRING") {
-            output::errorPrototypeMismatch(yylineno,terminalID->getValue());
+            output::errorPrototypeMismatch(yylineno,terminalID->getValue(), "STRING");
             exit(0);
         }
     }
     else if (terminalID->getValue() == "printi") {
         if (exp->getType() != "BYTE" && exp->getType() != "INT") {
-            output::errorPrototypeMismatch(yylineno,terminalID->getValue());
+            output::errorPrototypeMismatch(yylineno,terminalID->getValue(), "INT");
             exit(0);
         }
     }
     else { //MUST BE READI FUNCTION
         if(exp->getType() != "BYTE" && exp->getType() != "INT") {
-            output::errorPrototypeMismatch(yylineno,terminalID->getValue());
+            output::errorPrototypeMismatch(yylineno,terminalID->getValue(), "INT");
             exit(0);
         }
     }
@@ -196,7 +204,6 @@ Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "")
     codeGenerator.generateFunctionCall(terminalID);
     //**************************NEED TO ADD LABELS HERE**************************
 }
-
 
 //////////////////////////////////////////Statement//////////////////////////////////////////
 
@@ -235,6 +242,7 @@ Statement::Statement(Type* type, Node * id) {
     }
     id->setType(type->getType());
     stackTable.addSymbolToProgram(id->getValue(), false, type->getType(), {});
+    codeGenerator.generateGlobalVar(id->getValue(), type->getType());
 }
 
 // Statement -> Type ID Assign Exp SC
@@ -251,6 +259,10 @@ Statement::Statement(Type* type, Node * id, Expression * exp) {
         output::errorMismatch(yylineno);
         exit(0);
     }
+    if (type->getType() == "BYTE" && (stoi(exp->getValue()) > 255 || stoi(exp->getValue()) < 0)) {
+        output::errorByteTooLarge(yylineno, exp->getValue());
+        exit(0);
+    }
     stackTable.addSymbolToProgram(id->getValue(), false, type->getType(), {});
     id->setType(type->getType());
 }
@@ -265,6 +277,10 @@ Statement::Statement(Node * id, Expression * exp) {
         output::errorMismatch(yylineno);
         exit(0);
     }
+    if (id->getType() == "BYTE" && (stoi(exp->getValue()) > 255 || stoi(exp->getValue()) < 0)) {
+        output::errorByteTooLarge(yylineno, exp->getValue());
+        exit(0);
+    }
     string expV = exp->getValue();
     if (!isLegalFunc(exp->getValue(), exp->isFunc())) {
         output::errorUndef(yylineno, exp->getValue());
@@ -272,9 +288,9 @@ Statement::Statement(Node * id, Expression * exp) {
     }
 }
 
-// Statement -> IF|IF-ELSE|WHILE LP EXP RP SS -----Tested-----
-Statement::Statement(const string cond,BooleanExpression* boolexp) {
-    if (boolexp->getType() == "BYTE" && (stoi(boolexp->getValue()) > 255)) {
+// Statement -> IF|IF-ELSE|WHILE LP EXP RP SS 
+Statement::Statement(const string cond, BooleanExpression* boolexp) {
+    if (boolexp->getType() == "BYTE" && (stoi(boolexp->getValue()) > 255 || stoi(boolexp->getValue()) < 0)) {
         output::errorByteTooLarge(yylineno, boolexp->getValue());
         exit(0);
     }
@@ -288,11 +304,42 @@ Statement::Statement(const string cond,BooleanExpression* boolexp) {
         buffer.emit(loopLabel + ":");
         beginEndLabels.push_back(pair<string, string>(loopLabel, ""));
     }
+    else if (cond == "IF") {
+        string trueLabel = buffer.freshLabel();
+        string falseLabel = buffer.freshLabel();
+        boolexp->setTrueLabel(trueLabel);
+        boolexp->setFalseLabel(falseLabel);
+        codeGenerator.generateCondBranch(boolexp->getReg(), trueLabel, falseLabel);
+        buffer.emit(trueLabel + ":");
+    }
+    else { //IF-ELSE
+        string trueLabel = allocateLable("true");
+        string falseLabel = allocateLable("false");
+        string endLabel = allocateLable("end");
+        boolexp->setTrueLabel(trueLabel);
+        boolexp->setFalseLabel(falseLabel);
+        codeGenerator.generateCondBranch(boolexp->getReg(), trueLabel, falseLabel);
+        buffer.emit(trueLabel + ":");
+        beginEndLabels.push_back(pair<string, string>(endLabel, falseLabel));
+    }
 }
 
 // Statement L Statement R 
 Statement::Statement(Statement* Statement) {
     //open new scope
-    stackTable.pushScope(false, "");
+    stackTable.pushScope(false);
 }
 
+
+
+// Exp -> NOT Exp
+// BooleanExpression::BooleanExpression(Node* exp) : Node(exp->getValue(), "") {
+//     if (!stackTable.isDefinedInProgram(exp->getValue())) {
+//         output::errorUndef(yylineno, exp->getValue());
+//     }
+//     if (exp->getType() != "BOOL") {
+//         output::errorMismatch(yylineno);
+//         exit(0);
+//     }
+//     setType("BOOL");
+// }
