@@ -36,8 +36,12 @@ continue        { yylval= new Node(yytext); return CONTINUE; }
 (\{)            { yylval= new Node(yytext); return LBRACE; }
 (\})            { yylval= new Node(yytext); return RBRACE; }
 (=)             { yylval= new Node(yytext); return ASSIGN; }
->=|<=|<|>       { yylval= new Node(yytext); return RELOP;}
-!=|==           { yylval= new Node(yytext); return ISEQUAL; }
+>=              { yylval= new Node(yytext); return GL;}
+<=              { yylval= new Node(yytext); return LE;}
+<               { yylval= new Node(yytext); return LT;}
+>               { yylval= new Node(yytext); return GT;}
+==              { yylval= new Node(yytext); return EQ; }
+!=              { yylval= new Node(yytext); return NE; }
 \+              { yylval= new Node(yytext); return ADD; }
 \-              { yylval= new Node(yytext); return SUB; }
 \*              { yylval= new Node(yytext); return MULTIPLY; }

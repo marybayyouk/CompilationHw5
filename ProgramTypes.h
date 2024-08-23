@@ -66,7 +66,7 @@ public:
     BooleanExpression(Node* exp); // Exp -> LPAREN Exp RPAREN
     BooleanExpression(Node* leftExp, Node* rightExp, const string op); // Exp -> Exp RELOP/AND/OR Exp
 
-    BooleanExpression* notExpression(BooleanExpression* exp); // Exp->NOT Exp
+    BooleanExpression(BooleanExpression* exp, const string op); // Exp -> NOT Exp
     ~BooleanExpression() = default;
     string getTrueLabel() const { return trueLabel; }
     string getFalseLabel() const { return falseLabel; }
@@ -81,18 +81,15 @@ public:
     Expression(string reg, string value, string type) : Node(reg, value, type) {};
     Expression(Node* terminalExp); // Expression -> ID
     Expression(Type* type, Node* exp); // Expression -> LPAREN Type RPAREN Exp
-    //Expression(string value, string type, bool isFunc=false); //Expression->(SON'S C'TOR) BOOL/BYTE/INT/NUM/STRING    *****BOOL SHOULD BE REMOVED*****
     Expression(Node* leftExp, Node* rightExp, const string op); // Expression -> Expression Binop Expression
     ~Expression() = default;
-    // bool isFunc() const { return isFunction; }
-    // void setIsFunc(bool isFunction) { this->isFunction = isFunction; }
 };
 
 class Bool : public BooleanExpression { //takeen
 public:
-    Bool(Node* exp) {  // Exp -> True / False
+    Bool(Node* exp, string trueFalse) {  // Exp -> True / False
         BooleanExpression* boolExp = dynamic_cast<BooleanExpression *> (exp);
-        setValue(exp->getValue());
+        setValue(trueFalse);
         setType("bool");
         setReg(boolExp->getReg());
         string newTrueL = buffer.freshLabel();
@@ -109,7 +106,7 @@ public:
 
 class Num : public Expression { //takeen
 public:
-    Num(Node* exp) : Expression() { 
+    Num(Node* exp) : Expression() { //Exp -> NUM
         setValue(exp->getValue());
         setType("int");
         buffer.emit(exp->getReg() + " = add i32" + exp->getValue() + " , 0");
@@ -118,12 +115,12 @@ public:
 
 class NumB : public Expression { //takeen
 public:
-    NumB(Node* exp);
+    NumB(Node* exp); // Exp -> NUMB
 };
 
 class String : public Expression { //takeen
 public:
-    String(Node* exp) : Expression() {
+    String(Node* exp) : Expression() { //Exp -> STRING
         setValue(exp->getValue());
         setType("string");
         string global = freshGlobalReg();
@@ -138,7 +135,6 @@ public:
 class Statement : public Node {
     string nextLabel; //the label of the next code to execute after Statement
 public:
-    //Statement() : Node(), nextLabel(buffer.freshLabel()) {};  
     Statement(Statement* Statment) {}; // Statement -> Statement
     Statement(Node* BCNode); // Statement -> BREAK / CONTINUE
     Statement(Call * call); // Statement -> Call SC
@@ -164,8 +160,8 @@ class Statements : public Node {
     void setNextLabel(std::string label) { nextLabel = label; }
 };
 
-class Program : public Node {
-public:
+class Program : public Node { // Program -> Statements
+    public:
     Program() {
         codeGenerator.emitProgramStart();
     };

@@ -5,7 +5,7 @@
 
 extern StackTable stackTable;
 
-void CodeGenerator::initGlobalCode()
+void CodeGenerator::emitGlobals()
 {
     string rbp = freshReg();
     stackTable.getScope()->getBaseReg() = rbp;
@@ -50,7 +50,6 @@ void CodeGenerator::initGlobalCode()
     buffer.emitGlobal("ret void");
     buffer.emitGlobal("}");
 }
-
 
 void CodeGenerator::emitFuncRet() {
     buffer.emit("ret i32 0");
@@ -142,25 +141,6 @@ void CodeGenerator::generateStore(int offset, const string& valueReg, const stri
     ///IN PROGRAM TYPES NEED TO HANDLE NODE->TYPE == BOOL
 }
 
-// string CodeGenerator::generateBinaryInst(const string& expType, const string& lhs,const string& rhs, string op, string inst) {
-//     if (inst == "BINOP") { //NEED TO REVIEW THIS PART - SOMETHING IS WRONG
-//         op = getBinopOp(op);
-
-//         if (op == "DIV") {   
-//             checkDivZero(rhs);  ///check if division by zero
-//             if(expType == "INT") 
-//                 op = "sdiv";
-//             else 
-//                 op = "udiv";
-//         }
-//     }
-//     else if(inst == "RELOP") {
-//         op = getRelopOp(op);
-//         generateIcmp(op, lhs, rhs);
-//     }
-//     return resReg;
-// }
-
 void CodeGenerator::generateCondBranch(const string& condReg, const string& trueLabel, const string& falseLabel) {
     buffer.emit("br i1 " + condReg + ", label %" + trueLabel + ", label %" + falseLabel);
 }   
@@ -185,13 +165,32 @@ void CodeGenerator::generateJumpStatement(const string& label) { //takeen
         generateUncondBranch(stackTable.getScope()->getNextLabel());
 }
 
-void CodeGenerator::generatePhi(const string& resReg, const string& type, const vector<pair<string, string>>& labelsAndRegs) {
-    string phiReg = freshReg();
-    string phiStr = "phi i32 ";
-    for (auto& labelAndReg : labelsAndRegs) 
-        phiStr += "[ " + labelAndReg.first + ", %" + labelAndReg.second + " ], ";
-    phiStr.pop_back();
-    phiStr.pop_back();
-    buffer.emit(phiReg + " = " + phiStr);
-    buffer.emit(resReg + " = " + phiReg);
-}
+// string CodeGenerator::generateBinaryInst(const string& expType, const string& lhs,const string& rhs, string op, string inst) {
+//     if (inst == "BINOP") { //NEED TO REVIEW THIS PART - SOMETHING IS WRONG
+//         op = getBinopOp(op);
+
+//         if (op == "DIV") {   
+//             checkDivZero(rhs);  ///check if division by zero
+//             if(expType == "INT") 
+//                 op = "sdiv";
+//             else 
+//                 op = "udiv";
+//         }
+//     }
+//     else if(inst == "RELOP") {
+//         op = getRelopOp(op);
+//         generateIcmp(op, lhs, rhs);
+//     }
+//     return resReg;
+// }
+
+// void CodeGenerator::generatePhi(const string& resReg, const string& type, const vector<pair<string, string>>& labelsAndRegs) {
+//     string phiReg = freshReg();
+//     string phiStr = "phi i32 ";
+//     for (auto& labelAndReg : labelsAndRegs) 
+//         phiStr += "[ " + labelAndReg.first + ", %" + labelAndReg.second + " ], ";
+//     phiStr.pop_back();
+//     phiStr.pop_back();
+//     buffer.emit(phiReg + " = " + phiStr);
+//     buffer.emit(resReg + " = " + phiReg);
+// }

@@ -22,7 +22,7 @@ void endingLoopMarker() {
 ///////////////////////////////////////BooleanExpression///////////////////////////////////////
 
 // Expression -> NOT Expression
-BooleanExpression* BooleanExpression::notExpression(BooleanExpression* exp) { //takeen
+BooleanExpression::BooleanExpression(BooleanExpression* exp, const string op) { //takeen
     if (exp->getType() != "bool") {
         output::errorMismatch(yylineno);
         exit(0);
@@ -41,7 +41,6 @@ BooleanExpression* BooleanExpression::notExpression(BooleanExpression* exp) { //
     string tempTrueL = exp->getTrueLabel();
     boolExp->setTrueLabel(exp->getFalseLabel());
     boolExp->setFalseLabel(tempTrueL);
-    return boolExp;
 }
 
 // BooleanExpression -> Exp RELOP/AND/OR Exp

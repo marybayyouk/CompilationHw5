@@ -15,7 +15,7 @@ class CodeGenerator{
 public:
     CodeGenerator() = default;
     ~CodeGenerator() = default;
-    void initGlobalCode(); ///initialize global code
+    void emitGlobals(); ///initialize global code
     void checkDivZero(const string& reg); ///check if division by zero
     void defineLable(const string& label); ///define label   ++++
     void emitFuncRet(); ///generate return instruction   ++++
@@ -28,15 +28,12 @@ public:
     void generateJumpStatement(const string& label); ///generate break/continue statement
     void generateGlobalVar(const string& name, const string& type); ///generate global variable
     void generateStore(int offset, const string& valueReg, const string& ptr); ///generate store instruction
-    //string generateBinaryInst(const string& expType, const string& lhs, const string& rhs, string op, string inst); ///generate Binop/Relop instruction
-    //void generateUnaryInst(const string& expType, const string& reg, string op); ///generate unary instruction
     void generateCondBranch(const string& condReg, const string& trueLabel, const string& falseLabel); ///generate conditional branch
     void generateUncondBranch(const string& label); ///generate unconditional branch
-    void generateFunctionCall(Node* terminalID); ///generate function call
     void generateElfStatements(BooleanExpression* boolExp, bool isElf); ///generate if/else/ statements
-
+    //string generateBinaryInst(const string& expType, const string& lhs, const string& rhs, string op, string inst); ///generate Binop/Relop instruction
+    //void generateFunctionCall(Node* terminalID); ///generate function call
     //void generateAssign(const string& lhs, const string& rhs); ///generate assign instruction
     ///phi instruction
-    void generatePhi(const string& resReg, const string& type, const vector<pair<string, string>>& labelsAndRegs);
-
+    //void generatePhi(const string& resReg, const string& type, const vector<pair<string, string>>& labelsAndRegs);
 };
