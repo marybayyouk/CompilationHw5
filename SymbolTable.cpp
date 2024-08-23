@@ -1,6 +1,9 @@
 #include "SymbolTable.h"
 #include "hw3_output.hpp"
 #include "GeneralFunctions.h"
+#include "CodeGenerator.h"
+
+extern CodeGenerator codeGenerator;
 
 
 /////////////////////////////////////////////////SymbolTable//////////////////////////////////////////////////////////
@@ -52,9 +55,9 @@ void SymbolTable::addSymbol(Symbol* symbol) {
 StackTable::StackTable() : scopes(), scopesOffset() {
     pushScope(false);
     scopesOffset.push_back(0);
-    (scopes.back())->addSymbol(new Symbol("print", 0, true, "STRING", {"STRING"}));
-    (scopes.back())->addSymbol(new Symbol("printi", 0, true, "INT", {"INT"}));
-    (scopes.back())->addSymbol(new Symbol("readi", 0, true, "INT", {"INT"}));
+    (scopes.back())->addSymbol(new Symbol("print", 0, true, "string", {"string"}));
+    (scopes.back())->addSymbol(new Symbol("printi", 0, true, "int", {"int"}));
+    (scopes.back())->addSymbol(new Symbol("readi", 0, true, "int", {"int"}));
     scopesOffset.back() = 3;
 }
 
@@ -84,12 +87,12 @@ string StackTable::setFunctionType(string funcName) {
         }
     }
     if(funcName == "print") {
-        return output::makeFunctionType("STRING", "VOID");
+        return output::makeFunctionType("string", "void");
     }
     else if(funcName == "printi") {
-        return output::makeFunctionType("INT", "VOID");
+        return output::makeFunctionType("int", "void");
     }
-    return output::makeFunctionType("INT", "INT");
+    return output::makeFunctionType("int", "int");
 }
 
 void StackTable::popScope() {
@@ -105,7 +108,7 @@ void StackTable::popScope() {
     //    // output::printID(name, offs, type);
     // }
     if (scopes.back()->getIsLoop()) {
-        buffer.emit(scopes.back()->getNextLabel() + ":");
+        codeGenerator.defineLable(scopes.back()->getNextLabel());
     }
     scopes.pop_back();
     scopesOffset.pop_back();
@@ -113,9 +116,8 @@ void StackTable::popScope() {
 
 bool StackTable::isDefinedInProgram(const string& name) {
     for (SymbolTable* scope : scopes) {
-        if (scope->isDefinedInTable(name)) {
+        if (scope->isDefinedInTable(name)) 
             return true;
-        }
     }
     return false;
 }
@@ -123,9 +125,8 @@ bool StackTable::isDefinedInProgram(const string& name) {
 Symbol* StackTable::findSymbol(const string& name) {
     for (SymbolTable* scope : scopes) {
         Symbol* symbol = scope->findSymbol(name);
-        if (symbol != nullptr) {
+        if (symbol != nullptr) 
             return symbol;
-        }
     }
     return nullptr;
 }
@@ -159,5 +160,5 @@ void StackTable::handleLoopScope(SymbolTable* loopScope) {
     loopScope->setEntryLable(loopScope->getNextLabel());
     loopScope->setNextLabel(loopScope->getNextLabel());
     buffer.emit("br label %" + loopScope->getEntryLabel());
-    buffer.emit(loopScope->getEntryLabel() + ":");
+    codeGenerator.defineLable(loopScope->getEntryLabel());
 }

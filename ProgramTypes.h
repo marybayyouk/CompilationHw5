@@ -17,11 +17,11 @@ void endingLoopMarker(); //to use in parser.ypp to mark the end of a WHILE loop
 
 
 class Node {
-    std::string value;
-    std::string type;
     string reg;
+    string value;
+    string type;
 public:
-    Node(string val = "", string type = "", string reg = "") : value(val), type(type), reg(reg) {};
+    Node( string reg = "", string val = "", string type = "") : reg(reg), value(val), type(type) {};
     virtual ~Node() {};
     std::string getValue() const { return value; }
     std::string getType() const { return type; }
@@ -61,13 +61,13 @@ class BooleanExpression : public Node {
     string trueLabel;// target label for a jump when condition B evaluates to true
     string falseLabel; //target label for a jump when condition B evaluates to false
 public:
-    //BooleanExpression(bool terminalBool); // Exp -> True/False
-    //BooleanExpression(BooleanExpression* exp) : Node(exp->getValue(), exp->getType(), exp->getReg()) {};
+    BooleanExpression() : Node("", "bool") {};
     BooleanExpression(Call* call); // Exp -> Call
     BooleanExpression(Node* exp); // Exp -> LPAREN Exp RPAREN
     BooleanExpression(Node* leftExp, Node* rightExp, const string op); // Exp -> Exp RELOP/AND/OR Exp
-    ~BooleanExpression() = default;
+
     BooleanExpression* notExpression(BooleanExpression* exp); // Exp->NOT Exp
+    ~BooleanExpression() = default;
     string getTrueLabel() const { return trueLabel; }
     string getFalseLabel() const { return falseLabel; }
     void setTrueLabel(std::string label) { trueLabel = label; } 
@@ -75,39 +75,65 @@ public:
 };
 
 class Expression : public Node {    
-    bool isFunction;
+    //bool isFunction;
 public:
-    Expression(string reg) : Node("", "", reg) {};    
+    Expression() : Node() {};
+    Expression(string reg, string value, string type) : Node(reg, value, type) {};
     Expression(Node* terminalExp); // Expression -> ID
     Expression(Type* type, Node* exp); // Expression -> LPAREN Type RPAREN Exp
-    Expression(string value, string type, bool isFunc=false); //Expression->(SON'S C'TOR) BOOL/BYTE/INT/NUM/STRING    *****BOOL SHOULD BE REMOVED*****
+    //Expression(string value, string type, bool isFunc=false); //Expression->(SON'S C'TOR) BOOL/BYTE/INT/NUM/STRING    *****BOOL SHOULD BE REMOVED*****
     Expression(Node* leftExp, Node* rightExp, const string op); // Expression -> Expression Binop Expression
     ~Expression() = default;
-    bool isFunc() const { return isFunction; }
-    void setIsFunc(bool isFunction) { this->isFunction = isFunction; }
+    // bool isFunc() const { return isFunction; }
+    // void setIsFunc(bool isFunction) { this->isFunction = isFunction; }
 };
 
-class Bool : public Expression {
+class Bool : public BooleanExpression { //takeen
 public:
-    Bool(string value) : Expression(value, "BOOL") {};
-    Bool(Node* exp) : Expression(exp->getValue(), "BOOL") {};
+    Bool(Node* exp) {  // Exp -> True / False
+        BooleanExpression* boolExp = dynamic_cast<BooleanExpression *> (exp);
+        setValue(exp->getValue());
+        setType("bool");
+        setReg(boolExp->getReg());
+        string newTrueL = buffer.freshLabel();
+        string newFalseL = buffer.freshLabel();
+        boolExp->setTrueLabel(newTrueL);
+        boolExp->setFalseLabel(newFalseL);
+
+        if (exp->getValue() == "true") 
+            buffer.emit("br label %" + newTrueL);
+        else 
+            buffer.emit("br label %" + newFalseL);
+    }
 };
 
-class Num : public Expression {
+class Num : public Expression { //takeen
 public:
-    Num(Node* exp) : Expression(exp->getValue(), "INT") {};
+    Num(Node* exp) : Expression() { 
+        setValue(exp->getValue());
+        setType("int");
+        buffer.emit(exp->getReg() + " = add i32" + exp->getValue() + " , 0");
+    };
 };
 
-class NumB : public Expression {
+class NumB : public Expression { //takeen
 public:
     NumB(Node* exp);
 };
 
-class String : public Expression {
+class String : public Expression { //takeen
 public:
-    String(Node* exp) : Expression(exp->getValue(), "STRING") {};
+    String(Node* exp) : Expression() {
+        setValue(exp->getValue());
+        setType("string");
+        string global = freshGlobalReg();
+        string local = freshReg();
+        buffer.emit(global + " = constant [" + to_string(exp->getValue().size() + 1) + " x i8]" + " c" + exp->getValue() + "\\00\"");
+        buffer.emit(local + ".ptr = getelementptr[" + to_string(exp->getValue().size() + 1) + " x i8]" 
+                        + ", " + to_string(exp->getValue().size() + 1) + " x i8]*  " + global + ", i32 0, i32 0");
+        setReg(local);   
+    }
 };
-
 
 class Statement : public Node {
     string nextLabel; //the label of the next code to execute after Statement

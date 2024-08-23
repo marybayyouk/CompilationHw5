@@ -96,7 +96,7 @@ string allocateLable(const string& prefix) {
     return prefix + to_string(currLabel++);
 }
 
-string getCallEmitLine(string funcName, string reg) {
+string getCallEmitLine(string funcName, string reg) { //takeen
     string cmd;
     if (funcName == "print") {
         cmd = "call void @print(i8* " + reg + ");";
@@ -108,7 +108,7 @@ string getCallEmitLine(string funcName, string reg) {
     return cmd;
 }
 
-string emitTruncation(const string& reg, const string& type1, const string& type2, bool is2Types) {
+string emitTruncation(const string& reg, const string& type1, const string& type2, bool is2Types) { //takeen
     string trunReg = freshReg();
     if(is2Types) {
         if (type1 == "BYTE" && type2 == "INT") {
@@ -127,6 +127,6 @@ string emitTruncation(const string& reg, const string& type1, const string& type
             buffer.emit(trunReg + " = zext i8 " + reg + " to i1");
         }
     }    
-
+    
     return trunReg;
 }
