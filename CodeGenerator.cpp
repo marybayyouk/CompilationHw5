@@ -146,8 +146,7 @@ void CodeGenerator::generateCondBranch(const string& condReg, const string& true
 }   
 
 void CodeGenerator::generateUncondBranch(const string& label) { //takeen 
-    if(label.empty())
-        buffer.emit("br label %" + label);
+    buffer.emit("br label %" + label);
 }
 
 void CodeGenerator::generateElfStatements(BooleanExpression* exp, bool isElf) {

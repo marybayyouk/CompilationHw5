@@ -51,13 +51,20 @@ Statement: LBRACE ADDSCOPE Statements REMOVESCOPE RBRACE                { $$ = n
 
             | IF LPAREN IfMark RPAREN ADDSCOPE Statement REMOVESCOPE    { $$ = new Statement("IF", dynamic_cast<BooleanExpression*>($3)); } 
            
-    *** ||| *** IF LPAREN IfMark RPAREN ADDSCOPE Statement ELSE ElseMark  { $$ = new Statement("ELF", dynamic_cast<BooleanExpression*>($3)); stackTable.popScope(); } ADDSCOPE Statement REMOVESCOPE {}                                                                                                      
+
+            | IF LPAREN IfMark RPAREN ADDSCOPE Statement ELSE ElseMark  { buffer.emit(($3)->getFalseLable() + ":"); } ADDSCOPE Statement
+                                                                        {
+                                                                            $$ = new Statement("ELF", dynamic_cast<BooleanExpression*>($3));
+                                                                            stackTable.popScope(); 
+                                                                        }  
+                                                                        REMOVESCOPE { }  
             
+
             | WHILE NEWLOOP LPAREN Exp RPAREN                           {    
                                                                             Expression* exp = dynamic_cast<Expression*>($4);
                                                                             buffer.emit(exp->getTrueLable() + ":");
                                                                             Statement { $$ = new Statement("WHILE", dynamic_cast<BooleanExpression*>($3)); }          
-                                                                            REMOVESCOPE                                                                       
+                                                                            endingLoopMarker();                                              
                                                                         } 
 
             | BREAK SC                                                  { $$ = new Statement($1); }
@@ -111,25 +118,26 @@ REMOVESCOPE:                                                            {
                                                                         }
 ;
 ///handle IF///
-IfMark: Exp                                                             { 
+IFMARK: Exp                                                             { 
                                                                             isBoolExp($1); $$=$1; codeGenerator.generateElfStatements(dynamic_cast<BooleanExpression*> (Exp), true);
                                                                         }
 ///handle ELSE///
-ElseMark:                                                               {
+ELSEMARK:                                                               {
                                                                             ///need to do
                                                                         }       
 ;
-///Emit TrueLabel///
-EmitAnd:                                                                {
+///Emit And///
+EMITAND:                                                                {
                                                                             buffer.emit(dynamic_cast<Expression*($1)->getTrueLable() + ":" );
                                                                         }
 ;
 
-///Emit TrueLabel///
-EmitOr:                                                                 {
+///Emit Or///
+EMITOR:                                                                 {
                                                                             buffer.emit(dynamic_cast<Expression*($1)->getFalseLable() + ":" );
                                                                         }
 ;
+
 %%
 StackTable stackTable = StackTable();
 CodeGenerator codeGenerator = CodeGenerator();
