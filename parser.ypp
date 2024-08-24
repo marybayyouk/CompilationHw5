@@ -93,7 +93,7 @@ Exp:    LPAREN Exp RPAREN                                               { $$ = n
         | TRUE                                                          { $$ = new Bool($1, "true"); }
         | FALSE                                                         { $$ = new Bool($1, "false"); }
 
-        | NOT Exp                                                       { $$ = new BooleanExpression(dynamic_cast<Expression*>($2), "not")}
+        | NOT Exp                                                       { $$ = new BooleanExpression(dynamic_cast<Expression*>($2), "not");}
 
         | Exp AND Exp { buffer.emit(dynamic_cast<BooleanExpression*>($1)->getTrueLabel() + ":" ); } Exp                                      
                                                                         { 

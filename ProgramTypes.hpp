@@ -29,7 +29,7 @@ public:
 
 class Type : public Node {
 public:
-    Type(string type) : Node("",type) {};
+    Type(string type) : Node("", "", type) {};
 };
 
 class iD : public Node {
@@ -57,7 +57,7 @@ class BooleanExpression : public Node {
     string trueLabel;// target label for a jump when condition B evaluates to true
     string falseLabel; //target label for a jump when condition B evaluates to false
 public:
-    BooleanExpression() : Node("", "bool") {};
+    BooleanExpression() : Node(freshReg(), "", "bool") {};
     BooleanExpression(Call* call); // Exp -> Call
     BooleanExpression(Node* exp); // Exp -> LPAREN Exp RPAREN
     BooleanExpression(Node* leftExp, Node* rightExp, const string op); // Exp -> Exp RELOP/AND/OR Exp

@@ -68,7 +68,10 @@ StackTable::~StackTable() {
 }
 
 void StackTable::pushScope(bool isLoop) {
-    int currOffset = scopesOffset.back();
+     int currOffset = 0;
+    if(scopesOffset.size() > 0) {
+        currOffset = scopesOffset.back();
+    }
     SymbolTable* symTable = new SymbolTable(currOffset, isLoop);
     scopes.push_back(symTable);
     if(scopes.size() > 0) {
