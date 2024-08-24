@@ -140,8 +140,8 @@ IFMARK: Exp                                                             {
                                                                         }                           
 ;
 CHECKBOOL: Exp                                                          {   
-                                                                            Expression* newExpression = new Expression($1);
-                                                                            isBoolExp(newExpression); 
+                                                                            BooleanExpression* newExpression = new BooleanExpression($1);
+                                                                            codeGenerator.defineLable(newExpression->getTrueLabel());
                                                                             $$=$1;
                                                                         }
 ;

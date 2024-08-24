@@ -486,7 +486,7 @@ Statement::Statement(const string cond, BooleanExpression* boolexp) {
     }
 }
  Program::Program() {
-        codeGenerator.emitProgramStart();
+        codeGenerator.emitProgramEnd();
     };
     
 // Statement L Statement R 
