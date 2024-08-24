@@ -74,6 +74,7 @@ StackTable::StackTable() : scopes(), scopesOffset() {
 StackTable::~StackTable() {
     for(SymbolTable* scope : scopes) {
         if(scope) {
+            cout<<scope->getIsLoop()<<endl;
             delete scope;
             scope = nullptr;
         }
@@ -92,8 +93,11 @@ void StackTable::pushScope(bool isLoop) {
         scopes.back()->setBaseReg(scopes.back()->getBaseReg()); 
    }
     scopes.push_back(symTable);
-    if(isLoop) 
+    if(isLoop) {
         handleLoopScope(symTable);
+        symTable->setEntryLable(buffer.freshLabel());
+        symTable->setNextLabel(buffer.freshLabel());
+    } 
 }
 
 string StackTable::setFunctionType(string funcName) {
