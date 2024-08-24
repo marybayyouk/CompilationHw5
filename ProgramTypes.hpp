@@ -91,16 +91,16 @@ public:
         this->setValue(trueFalse);
         this->setType("bool");
         this->setReg(freshReg());
-        // cout<<"here"<<this->getType()<<endl;
         string newTrueL = CodeBuffer::instance().freshLabel();
         string newFalseL = CodeBuffer::instance().freshLabel();
         boolExp->setTrueLabel(newTrueL);
         boolExp->setFalseLabel(newFalseL);
 
-        if (trueFalse == "true") 
+        if (trueFalse == "true") { 
             CodeBuffer::instance().emit("br label %" + newTrueL);
-        else 
+        } else { 
             CodeBuffer::instance().emit("br label %" + newFalseL);
+        }
     }
 };
 
@@ -148,17 +148,12 @@ public:
 };
 
 class Statements : public Node {
-    string nextLabel; //the label of the next code to execute after Statments
     public:
-    Statements(Statement* statement) : Node() { statement->setNextLabel(CodeBuffer::instance().freshLabel()); }; // Statements -> Statement
+    Statements(Statement* statement) : Node() { }; // Statements -> Statement
     // Statements -> Statements Statement
     Statements (Statements* statements, Statement* statement) : Node() { 
-        statement->setNextLabel(CodeBuffer::instance().freshLabel());
-        statements->setNextLabel(statement->getNextLabel());
-    }; 
+    };
     ~Statements() = default;
-    string getNextLabel() const { return nextLabel; }
-    void setNextLabel(std::string label) { nextLabel = label; }
 };
 
 class Program : public Node { // Program -> Statements

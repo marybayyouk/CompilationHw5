@@ -150,22 +150,18 @@ BooleanExpression::BooleanExpression(Call* call) {
 
 // EXP -> ID 
 Expression::Expression(Node* terminalExp) {  //takeen
-    // cout<<"first"<<endl;
     if (!stackTable.isDefinedInProgram(terminalExp->getValue())){
         output::errorUndef(yylineno, terminalExp->getValue());
         exit(0);
     }
-    // cout<<"before"<<endl;
     setValue(terminalExp->getValue());
-    // cout<<"mid"<<endl;
-    cout<<terminalExp->getValue()<<endl;
     setType(stackTable.findSymbol(terminalExp->getValue())->getType());
-    // cout<<"type of this inside epx->ID "<<this->getType()<<endl;
 
     int offset = stackTable.findSymbol(terminalExp->getValue())->getOffset();
     string ptr = freshReg();
     string reg = codeGenerator.generateLoad(offset, ptr, terminalExp->getType());
     setReg(reg); 
+
     if (this->getType() == "bool") {
         BooleanExpression* boolExp = new BooleanExpression(this);
         string newReg = freshReg();
@@ -357,8 +353,6 @@ Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need t
         output::errorDef(yylineno, id->getValue());
         exit(0);
     }
-    // cout<<"type get type"<<type->getType()<<endl;
-    // cout<<"exp get type" << exp->getType() << endl;
     if (!LegalType(type->getType(), exp->getType())) {
         output::errorMismatch(yylineno);
         exit(0);
@@ -466,7 +460,6 @@ Statement::Statement(Node * id, Expression * exp) { //maybe i need to check if t
 
 // Statement -> IF|IF-ELSE|WHILE LP EXP RP SS 
 Statement::Statement(const string cond, BooleanExpression* boolexp) {
-    // cout<<"before"<<endl;
     if (boolexp->getType() == "byte" && (stoi(boolexp->getValue()) > 255 || stoi(boolexp->getValue()) < 0)) {
         output::errorByteTooLarge(yylineno, boolexp->getValue());
         exit(0);
@@ -483,7 +476,6 @@ Statement::Statement(const string cond, BooleanExpression* boolexp) {
         codeGenerator.generateUncondBranch(stackTable.findInnermostLoopScope()->getEntryLabel());
     }
     else if (cond == "IF") {
-        cout<<"here"<<endl;
         codeGenerator.generateUncondBranch(boolexp->getFalseLabel());
         codeGenerator.defineLable(boolexp->getTrueLabel());
     }

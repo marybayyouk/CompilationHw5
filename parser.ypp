@@ -53,9 +53,12 @@ Statement: LBRACE ADDSCOPE Statements REMOVESCOPE RBRACE                { $$ = n
                                                                         { $$ = new Statement("IF", dynamic_cast<BooleanExpression*>($3)); } 
         
             | IF LPAREN CHECKBOOL RPAREN ADDSCOPE Statement 
-              ELSE { dynamic_cast<Statement*>($6)->afterElse(); buffer.emit((dynamic_cast<BooleanExpression*>($3))->getFalseLabel() + ":"); }  ADDSCOPE Statement
+              ELSE {                                                        dynamic_cast<Statement*>($6)->afterElse();
+                                                                            BooleanExpression* boolExp = new BooleanExpression($3);
+                                                                            buffer.emit(boolExp->getFalseLabel() + ":");} ADDSCOPE Statement
                                                                         {
-                                                                            $$ = new Statement("ELF", dynamic_cast<BooleanExpression*>($3));
+                                                                            BooleanExpression* boolExpStatment = new BooleanExpression($3);
+                                                                            $$ = new Statement("ELF", boolExpStatment);
                                                                             stackTable.popScope(); 
                                                                         }  
                                                                         REMOVESCOPE {}  
@@ -95,14 +98,14 @@ Exp:    LPAREN Exp RPAREN                                               { $$ = n
 
         | NOT Exp                                                       { $$ = new BooleanExpression(dynamic_cast<Expression*>($2), "not");}
 
-        | Exp AND Exp { buffer.emit(dynamic_cast<BooleanExpression*>($1)->getTrueLabel() + ":" ); } Exp                                      
+        | Exp AND  { buffer.emit(dynamic_cast<BooleanExpression*>($1)->getTrueLabel() + ":" ); } Exp                                      
                                                                         { 
-                                                                            $$ = new BooleanExpression($1, $3, "AND");
+                                                                            $$ = new BooleanExpression($1, $4, "AND");
                                                                         } 
 
-        | Exp OR Exp { buffer.emit(dynamic_cast<BooleanExpression*>($1)->getFalseLabel() + ":" ); } Exp                                        
+        | Exp OR  { buffer.emit(dynamic_cast<BooleanExpression*>($1)->getFalseLabel() + ":" ); } Exp                                        
                                                                         { 
-                                                                            $$ = new BooleanExpression($1, $3, "OR");
+                                                                            $$ = new BooleanExpression($1, $4, "OR");
                                                                         }
 
         | Exp EQ Exp                                                    { $$ = new BooleanExpression($1, $3, "EQ"); }
@@ -139,7 +142,7 @@ IFMARK: Exp                                                             {
 CHECKBOOL: Exp                                                          {   
                                                                             Expression* newExpression = new Expression($1);
                                                                             isBoolExp(newExpression); 
-                                                                            $$=$1; 
+                                                                            $$=$1;
                                                                         }
 ;
 %%
