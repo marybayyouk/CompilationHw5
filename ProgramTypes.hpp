@@ -53,11 +53,25 @@ public:
     void setNextLabel(std::string label) { nextLabel = label; }
 };
 
-class BooleanExpression : public Node {
+
+
+class Expression : public Node {    
+    //bool isFunction;
+public:
+    // Expression() = default;
+    Expression( string reg = "", string val = "", string type = "") : Node(reg, val, type) {};
+    // Expression(string reg, string value, string type) : Node(reg, value, type) {};
+    Expression(Node* terminalExp); // Expression -> ID
+    Expression(Type* type, Node* exp); // Expression -> LPAREN Type RPAREN Exp
+    Expression(Node* leftExp, Node* rightExp, const string op); // Expression -> Expression Binop Expression
+    ~Expression() = default;
+};
+
+class BooleanExpression : public Expression {
     string trueLabel;// target label for a jump when condition B evaluates to true
     string falseLabel; //target label for a jump when condition B evaluates to false
 public:
-    BooleanExpression() : Node(freshReg(), "", "bool") {};
+    BooleanExpression() : Expression(freshReg(), "", "bool") {};
     BooleanExpression(Call* call); // Exp -> Call
     BooleanExpression(Node* exp); // Exp -> LPAREN Exp RPAREN
     BooleanExpression(Node* leftExp, Node* rightExp, const string op); // Exp -> Exp RELOP/AND/OR Exp
@@ -66,34 +80,24 @@ public:
     ~BooleanExpression() = default;
     string getTrueLabel() const { return trueLabel; }
     string getFalseLabel() const { return falseLabel; }
-    void setTrueLabel(std::string label) { trueLabel = label; } 
+    void setTrueLabel(std::string label) { trueLabel = label;} 
     void setFalseLabel(std::string label) { falseLabel = label; }
 };
-
-class Expression : public Node {    
-    //bool isFunction;
-public:
-    Expression() : Node() {};
-    Expression(string reg, string value, string type) : Node(reg, value, type) {};
-    Expression(Node* terminalExp); // Expression -> ID
-    Expression(Type* type, Node* exp); // Expression -> LPAREN Type RPAREN Exp
-    Expression(Node* leftExp, Node* rightExp, const string op); // Expression -> Expression Binop Expression
-    ~Expression() = default;
-};
-
 class Bool : public BooleanExpression { //takeen
 public:
     Bool(Node* exp, string trueFalse) {  // Exp -> True / False
-        BooleanExpression* boolExp = dynamic_cast<BooleanExpression *> (exp);
-        setValue(trueFalse);
-        setType("bool");
-        setReg(boolExp->getReg());
+        BooleanExpression* boolExp = new BooleanExpression();
+        boolExp->setReg(exp->getReg());
+        this->setValue(trueFalse);
+        this->setType("bool");
+        this->setReg(freshReg());
+        // cout<<"here"<<this->getType()<<endl;
         string newTrueL = CodeBuffer::instance().freshLabel();
         string newFalseL = CodeBuffer::instance().freshLabel();
         boolExp->setTrueLabel(newTrueL);
         boolExp->setFalseLabel(newFalseL);
 
-        if (exp->getValue() == "true") 
+        if (trueFalse == "true") 
             CodeBuffer::instance().emit("br label %" + newTrueL);
         else 
             CodeBuffer::instance().emit("br label %" + newFalseL);

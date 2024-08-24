@@ -148,12 +148,17 @@ BooleanExpression::BooleanExpression(Call* call) {
 
 // EXP -> ID 
 Expression::Expression(Node* terminalExp) {  //takeen
+    // cout<<"first"<<endl;
     if (!stackTable.isDefinedInProgram(terminalExp->getValue())){
         output::errorUndef(yylineno, terminalExp->getValue());
         exit(0);
     }
+    // cout<<"before"<<endl;
     setValue(terminalExp->getValue());
+    // cout<<"mid"<<endl;
+    cout<<terminalExp->getValue()<<endl;
     setType(stackTable.findSymbol(terminalExp->getValue())->getType());
+    // cout<<"type of this inside epx->ID "<<this->getType()<<endl;
 
     int offset = stackTable.findSymbol(terminalExp->getValue())->getOffset();
     string ptr = freshReg();
@@ -348,6 +353,8 @@ Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need t
         output::errorDef(yylineno, id->getValue());
         exit(0);
     }
+    // cout<<"type get type"<<type->getType()<<endl;
+    // cout<<"exp get type" << exp->getType() << endl;
     if (!LegalType(type->getType(), exp->getType())) {
         output::errorMismatch(yylineno);
         exit(0);

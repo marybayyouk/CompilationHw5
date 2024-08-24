@@ -58,6 +58,11 @@ StackTable::StackTable() : scopes(), scopesOffset() {
     (scopes.back())->addSymbol(new Symbol("print", 0, true, "string", {"string"}));
     (scopes.back())->addSymbol(new Symbol("printi", 0, true, "int", {"int"}));
     (scopes.back())->addSymbol(new Symbol("readi", 0, true, "int", {"int"}));
+    // for (const Symbol* symbol : getScope()->symbols) {
+    //     cout<<"the name"<< endl;
+    //     cout<<symbol->getName()<<endl;
+    // }
+
     scopesOffset.back() = 3;
 }
 
