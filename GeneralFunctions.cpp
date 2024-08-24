@@ -74,17 +74,17 @@ string getRelopOp(string op) {
 }
 
 string freshReg() {
-    int static currReg = 0;
+    int static currReg = 1;
     return "%" + to_string(currReg++);
 }
 
 string freshGlobalReg() {
-    int static currReg = 0;
+    int static currReg = 1;
     return "@g" + to_string(currReg++);
 }
 
 string allocateLable(const string& prefix) {  
-    int static currLabel = 0;
+    int static currLabel = 1;
     return prefix + to_string(currLabel++);
 }
 
