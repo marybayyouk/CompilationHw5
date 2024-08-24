@@ -133,7 +133,7 @@ public:
 };
 
 class Statement : public Node {
-    string nextLabel; //the label of the next code to execute after Statement
+    string nextLabelS; //the label of the next code to execute after Statement
 public:
     Statement(Statement* Statment) {}; // Statement -> Statement
     Statement(Node* BCNode); // Statement -> BREAK / CONTINUE
@@ -142,8 +142,9 @@ public:
     Statement(Node * id, Expression * exp); // Statement -> ID Assign Exp SC
     Statement(Type* type,Node * id); // Statement -> Type ID SC  
     Statement(Type* type, Node * id, Expression * exp); // Statement -> Type ID Assign Exp SC
-    string getNextLabel() const { return nextLabel; }
-    void setNextLabel(std::string label) { nextLabel = label; }
+    void afterElse(); //to use as parser.ypp
+    string getNextLabel() const { return nextLabelS; }
+    void setNextLabel(std::string label) { nextLabelS = label; }
 };
 
 class Statements : public Node {

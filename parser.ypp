@@ -58,9 +58,8 @@ Statement: LBRACE ADDSCOPE Statements REMOVESCOPE RBRACE                { $$ = n
                                                                             stackTable.popScope(); 
                                                                         }  
                                                                         REMOVESCOPE { }  
-            
 
-            | WHILE NEWLOOP LPAREN Exp RPAREN                           {    
+            | WHILE NEWLOOPSCOPE LPAREN Exp RPAREN                      {    
                                                                             Expression* exp = dynamic_cast<Expression*>($4);
                                                                             buffer.emit(exp->getTrueLable() + ":");
                                                                             Statement { $$ = new Statement("WHILE", dynamic_cast<BooleanExpression*>($3)); }          
@@ -107,6 +106,12 @@ Exp:    LPAREN Exp RPAREN                                               { $$ = n
         | LPAREN Type RPAREN Exp                                        { $$ = new Expression(dynamic_cast<Type*>($2), $4);}
 
 ;
+
+///pushLoopScope WHILE///
+NEWLOOPSCOPE:                                                           {
+                                                                            stackTable.pushScope(true);
+                                                                        }
+;
 ///pushScope///
 ADDSCOPE:                                                               {
                                                                             stackTable.pushScope(false);
@@ -123,18 +128,20 @@ IFMARK: Exp                                                             {
                                                                         }
 ///handle ELSE///
 ELSEMARK:                                                               {
-                                                                            ///need to do
+                                                                            Statement* currSate = dynamic_cast<Statement*>($6);
+                                                                            currSate->afterElse();
+   
                                                                         }       
 ;
 ///Emit And///
 EMITAND:                                                                {
-                                                                            buffer.emit(dynamic_cast<Expression*($1)->getTrueLable() + ":" );
+                                                                            buffer.emit(dynamic_cast<Expression*>($1)->getTrueLable() + ":" );
                                                                         }
 ;
 
 ///Emit Or///
 EMITOR:                                                                 {
-                                                                            buffer.emit(dynamic_cast<Expression*($1)->getFalseLable() + ":" );
+                                                                            buffer.emit(dynamic_cast<Expression*>($1)->getFalseLable() + ":" );
                                                                         }
 ;
 

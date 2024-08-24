@@ -436,21 +436,30 @@ Statement::Statement(const string cond, BooleanExpression* boolexp) {
     }
 
     if (cond == "WHILE") {
-        beginingLoopMarker(boolexp->getTrueLabel());
+        codeGenerator.generateUncondBranch(stackTable->getScope()->getEntryLabel());
+        codeGenerator.defineLable(stackTable->getScope()->getEntryLabel());
+        codeGenerator.defineLable(boolexp->getFalseLabel());    
+        codeGenerator.generateUncondBranch(stackTable->findInnermostLoopScope()->getEntryLabel());
     }
     else if (cond == "IF") {
         codeGenerator.generateUncondBranch(boolexp->getFalseLabel());
-        buffer.emit(boolexp->getFalseLabel() + ":");
+        codeGenerator.defineLable(boolexp->getTrueLabel());
     }
     else { //IF-ELSE
         codeGenerator.generateUncondBranch(stackTable->getScope()->getEntryLabel());
-        buffer.emit(this->getNextLabel() + ":");    
+        codeGenerator.defineLable(boolexp->getTrueLabel());
+        codeGenerator.defineLable(getNextLabel()); //Statement Next Label
     }
 }
-
+    
 // Statement L Statement R 
 Statement::Statement(Statement* Statement) {
     //open new scope
     stackTable->popScope();
     codeGenerator.emitProgramEnd();
+}
+
+void Statement::afterElse() {
+    setNextLabel(buffer.freshLabel());
+    codeGenerator.defineLable(getNextLabel()); //Statement Next Label
 }
