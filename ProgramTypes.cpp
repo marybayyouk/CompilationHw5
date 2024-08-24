@@ -333,7 +333,7 @@ Statement::Statement(Type* type, Node * id) { //takeen
     }
     id->setType(type->getType());
     id->setReg(freshReg());
-    stackTable.addSymbolToProgram(id->getValue(), false, type->getType(), {});
+    stackTable.addSymbolToProgram(id->getValue(), false, type->getType(), "");
 
     Expression* exp = new Expression(freshReg(), "0", "int");
     buffer.emit(exp->getReg() + " = add i32" + exp->getValue() + ", 0");
@@ -395,7 +395,7 @@ Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need t
         useless->setReg(exp->getReg());
     }
 
-    stackTable.addSymbolToProgram(id->getValue(), false, type->getType(), {});
+    stackTable.addSymbolToProgram(id->getValue(), false, type->getType(), "");
     id->setType(type->getType());
     codeGenerator.generateStore(stackTable.findSymbol(id->getValue())->getOffset(), exp->getReg(), type->getType());
     delete useless;
@@ -451,7 +451,7 @@ Statement::Statement(Node * id, Expression * exp) { //maybe i need to check if t
         useless->setReg(exp->getReg());
     }
 
-    stackTable.addSymbolToProgram(id->getValue(), false, type->getType(), {});
+    stackTable.addSymbolToProgram(id->getValue(), false, type->getType(), "");
     id->setType(type->getType());
     codeGenerator.generateStore(stackTable.findSymbol(id->getValue())->getOffset(), exp->getReg(), type->getType());
     delete useless;
@@ -486,6 +486,7 @@ Statement::Statement(const string cond, BooleanExpression* boolexp) {
     }
 }
  Program::Program() {
+        stackTable.popScope();
         codeGenerator.emitProgramEnd();
     };
     

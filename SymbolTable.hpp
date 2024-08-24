@@ -11,27 +11,23 @@
 using std::string;
 using std::vector;
 
-struct NameTypeInfo {
-    string type; ///int, string, void, etc.
-    vector<string> names; ///for functions, the names of the parameters
-};
-
-class Symbol {  ///variable or function
+class Symbol {
 private:
-    string symName; 
+    string symName;
     int symOffset;
     bool isFunc;
-    NameTypeInfo NameType;
+    string type; //if function -> arg type
+    string retType; //if functionr -> return type
 public:
-    Symbol(const string& name, int offset, bool isfunc, const string& type, vector<string> names) : 
-                                            symName(name), symOffset(offset), isFunc(isfunc), NameType{type, names} {}
+    Symbol(const string& name, int offset, bool isfunc, const string& type, string rettype) : 
+                                            symName(name), symOffset(offset), isFunc(isfunc), type(type), retType(rettype){};
     ~Symbol() = default;
     ///GETTERS
-    NameTypeInfo getNameType() const { return NameType; }
+    string getRetType() const { return retType; }
     string getName() const { return symName; }
     int getOffset() const { return symOffset; }
     bool getIsFunction() const { return isFunc; }
-    string getType() const { return NameType.type; }
+    string getType() const { return this->type; }
 };
 
 class SymbolTable {  ///scope
@@ -74,7 +70,7 @@ public:
     void popScope();
     string setFunctionType(string funcName);
     bool isDefinedInProgram(const string& symName);
-    void addSymbolToProgram(const string& name, bool isFunc, const string& type, vector<string> names);
+    void addSymbolToProgram(const string& name, bool isFunc, const string& type, const string& names);
     SymbolTable* getScope();
     Symbol* findSymbol(const string& symName);
     SymbolTable* findInnermostLoopScope();
