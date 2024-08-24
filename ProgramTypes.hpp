@@ -1,14 +1,10 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include "SymbolTable.h"
-#include "GeneralFunctions.h"
-#include "cg.hpp"
-#include "CodeGenerator.h"
-#include "hw3_output.hpp"
+#include "SymbolTable.hpp"
+#include "GeneralFunctions.hpp"
 
 #define YYSTYPE Node*
-extern CodeGenerator codeGenerator;
 class Expression;
 
 
@@ -66,7 +62,7 @@ public:
     BooleanExpression(Node* exp); // Exp -> LPAREN Exp RPAREN
     BooleanExpression(Node* leftExp, Node* rightExp, const string op); // Exp -> Exp RELOP/AND/OR Exp
 
-    BooleanExpression(BooleanExpression* exp, const string op); // Exp -> NOT Exp
+    BooleanExpression(Node* boolexp, const string op); // Exp -> NOT Exp
     ~BooleanExpression() = default;
     string getTrueLabel() const { return trueLabel; }
     string getFalseLabel() const { return falseLabel; }
@@ -92,15 +88,15 @@ public:
         setValue(trueFalse);
         setType("bool");
         setReg(boolExp->getReg());
-        string newTrueL = buffer.freshLabel();
-        string newFalseL = buffer.freshLabel();
+        string newTrueL = CodeBuffer::instance().freshLabel();
+        string newFalseL = CodeBuffer::instance().freshLabel();
         boolExp->setTrueLabel(newTrueL);
         boolExp->setFalseLabel(newFalseL);
 
         if (exp->getValue() == "true") 
-            buffer.emit("br label %" + newTrueL);
+            CodeBuffer::instance().emit("br label %" + newTrueL);
         else 
-            buffer.emit("br label %" + newFalseL);
+            CodeBuffer::instance().emit("br label %" + newFalseL);
     }
 };
 
@@ -109,7 +105,7 @@ public:
     Num(Node* exp) : Expression() { //Exp -> NUM
         setValue(exp->getValue());
         setType("int");
-        buffer.emit(exp->getReg() + " = add i32" + exp->getValue() + " , 0");
+        CodeBuffer::instance().emit(exp->getReg() + " = add i32" + exp->getValue() + " , 0");
     };
 };
 
@@ -125,8 +121,8 @@ public:
         setType("string");
         string global = freshGlobalReg();
         string local = freshReg();
-        buffer.emit(global + " = constant [" + to_string(exp->getValue().size() + 1) + " x i8]" + " c" + exp->getValue() + "\\00\"");
-        buffer.emit(local + ".ptr = getelementptr[" + to_string(exp->getValue().size() + 1) + " x i8]" 
+        CodeBuffer::instance().emit(global + " = constant [" + to_string(exp->getValue().size() + 1) + " x i8]" + " c" + exp->getValue() + "\\00\"");
+        CodeBuffer::instance().emit(local + ".ptr = getelementptr[" + to_string(exp->getValue().size() + 1) + " x i8]" 
                         + ", " + to_string(exp->getValue().size() + 1) + " x i8]*  " + global + ", i32 0, i32 0");
         setReg(local);   
     }
@@ -135,7 +131,7 @@ public:
 class Statement : public Node {
     string nextLabelS; //the label of the next code to execute after Statement
 public:
-    Statement(Statement* Statment) {}; // Statement -> Statement
+    Statement(Statement* Statment); // Statement -> Statement
     Statement(Node* BCNode); // Statement -> BREAK / CONTINUE
     Statement(Call * call); // Statement -> Call SC
     Statement(const string cond, BooleanExpression* exp); // Statement -> IF | IF-ELSE | WHILE LP BooleanExpression RP Statment
@@ -150,10 +146,10 @@ public:
 class Statements : public Node {
     string nextLabel; //the label of the next code to execute after Statments
     public:
-    Statements(Statement* statement) : Node() { statement->setNextLabel(buffer.freshLabel()); }; // Statements -> Statement
+    Statements(Statement* statement) : Node() { statement->setNextLabel(CodeBuffer::instance().freshLabel()); }; // Statements -> Statement
     // Statements -> Statements Statement
     Statements (Statements* statements, Statement* statement) : Node() { 
-        statement->setNextLabel(buffer.freshLabel());
+        statement->setNextLabel(CodeBuffer::instance().freshLabel());
         statements->setNextLabel(statement->getNextLabel());
     }; 
     ~Statements() = default;
@@ -163,9 +159,9 @@ class Statements : public Node {
 
 class Program : public Node { // Program -> Statements
     public:
-    Program() {
-        codeGenerator.emitProgramStart();
-    };
+    Program();
     ~Program() = default;
 };
 
+void generateElfStatements(BooleanExpression* boolExp, bool isElf); ///generate if/else/ statements
+void emitTypesLiteral(Expression* exp, const string& type); ///emit types literal && getelementptr

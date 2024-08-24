@@ -1,9 +1,9 @@
-#include "SymbolTable.h"
-#include "hw3_output.hpp"
-#include "GeneralFunctions.h"
-#include "CodeGenerator.h"
+#include "SymbolTable.hpp"
+#include "CodeGenerator.hpp"
+#include "cg.hpp"
 
 extern CodeGenerator codeGenerator;
+CodeBuffer buffer;
 
 
 /////////////////////////////////////////////////SymbolTable//////////////////////////////////////////////////////////

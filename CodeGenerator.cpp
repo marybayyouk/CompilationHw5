@@ -1,9 +1,8 @@
-#include "CodeGenerator.h"
-#include "GeneralFunctions.h"
-#include "ProgramTypes.h"
-#include "cg.hpp"
+#include "CodeGenerator.hpp"
+#include "ProgramTypes.hpp"
 
-extern StackTable stackTable;
+extern CodeBuffer buffer;
+
 
 void CodeGenerator::emitGlobals()
 {
@@ -85,24 +84,6 @@ void CodeGenerator::emitProgramStart() {
     buffer.emit("define i32 @main(){");
 }
 
-void CodeGenerator::emitTypesLiteral(Expression* exp, const string& type) {
-    if (type == "BYTE") ///NUMB
-        buffer.emit(exp->getReg() + " = add i18 " + exp->getValue() + ", 0");
-    else if (type == "BOOL") 
-        buffer.emit(exp->getReg() + " = add i1 " + exp->getValue() + ", 0");
-    else if (type == "INT") ///NUM
-        buffer.emit(exp->getReg() + " = add i32 " + exp->getValue() + ", 0"); 
-    else if (type == "STRING") {
-        string globalReg = freshGlobalReg();
-        string strReg = freshReg();
-        ///MAYBE NEXT LINE SHOULD BE -1 AND NOT +1
-        buffer.emit(globalReg + " = constant [" + to_string(exp->getValue().size() + 1) + " x i8]" + " c" + exp->getValue() + "\\00\"");
-        buffer.emit(strReg + " = getelementptr[" + to_string(exp->getValue().size() + 1) + " x i8]" 
-                        + ", " + to_string(exp->getValue().size() + 1) + " x i8]*  " + globalReg + ", i32 0, i32 0");
-        exp->setReg(strReg);
-    }
-}
-
 string CodeGenerator::generateAlloca() {
     string allocaReg = freshReg();
     buffer.emit(allocaReg + " = alloca i32 50"); ///allocate stack
@@ -149,12 +130,7 @@ void CodeGenerator::generateUncondBranch(const string& label) { //takeen
     buffer.emit("br label %" + label);
 }
 
-void CodeGenerator::generateElfStatements(BooleanExpression* exp, bool isElf) {
-    if (isElf) 
-        buffer.emit("br label %" + exp->getTrueLabel() + "\n" + exp->getTrueLabel() + ":");
-    else
-        buffer.emit("br label %" + exp->getFalseLabel() + "\n" + exp->getFalseLabel() + ":");           
-}
+
 
 // Break and Continue
 void CodeGenerator::generateJumpStatement(const string& label) { //takeen

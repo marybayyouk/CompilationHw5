@@ -5,6 +5,8 @@
 #include <string>
 #include <iostream>	
 
+
+
 using namespace std;
 
 class CodeBuffer{
@@ -36,5 +38,6 @@ public:
 	void printGlobalBuffer();
 
 };
+
 
 #endif

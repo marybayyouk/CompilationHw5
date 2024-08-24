@@ -1,9 +1,37 @@
-#include "ProgramTypes.h"
+#include "ProgramTypes.hpp"
+#include "CodeGenerator.hpp"
 
 extern int yylineno;
-extern StackTable* stackTable;
+extern StackTable stackTable;
+extern CodeBuffer buffer;
+extern CodeGenerator codeGenerator;
 using namespace std;
 
+
+void generateElfStatements(BooleanExpression* exp, bool isElf) {
+    if (isElf) 
+        buffer.emit("br label %" + exp->getTrueLabel() + "\n" + exp->getTrueLabel() + ":");
+    else
+        buffer.emit("br label %" + exp->getFalseLabel() + "\n" + exp->getFalseLabel() + ":");           
+}
+
+void emitTypesLiteral(Expression* exp, const string& type) {
+    if (type == "BYTE") ///NUMB
+        buffer.emit(exp->getReg() + " = add i18 " + exp->getValue() + ", 0");
+    else if (type == "BOOL") 
+        buffer.emit(exp->getReg() + " = add i1 " + exp->getValue() + ", 0");
+    else if (type == "INT") ///NUM
+        buffer.emit(exp->getReg() + " = add i32 " + exp->getValue() + ", 0"); 
+    else if (type == "STRING") {
+        string globalReg = freshGlobalReg();
+        string strReg = freshReg();
+        ///MAYBE NEXT LINE SHOULD BE -1 AND NOT +1
+        buffer.emit(globalReg + " = constant [" + to_string(exp->getValue().size() + 1) + " x i8]" + " c" + exp->getValue() + "\\00\"");
+        buffer.emit(strReg + " = getelementptr[" + to_string(exp->getValue().size() + 1) + " x i8]" 
+                        + ", " + to_string(exp->getValue().size() + 1) + " x i8]*  " + globalReg + ", i32 0, i32 0");
+        exp->setReg(strReg);
+    }
+}
 
 void isBoolExp(Expression* exp) {
     if(exp->getType() != "bool") {
@@ -14,7 +42,7 @@ void isBoolExp(Expression* exp) {
 
 //WHILE ENDING LOOP MARKER
 void endingLoopMarker() {
-    stackTable->popScope();
+    stackTable.popScope();
 }
 void beginingLoopMarker(string beginLabel) {
     codeGenerator.generateUncondBranch(beginLabel);
@@ -25,12 +53,13 @@ void beginingLoopMarker(string beginLabel) {
 ///////////////////////////////////////BooleanExpression///////////////////////////////////////
 
 // Expression -> NOT Expression
-BooleanExpression::BooleanExpression(BooleanExpression* exp, const string op) { //takeen
+BooleanExpression::BooleanExpression(Node* boolexp, const string op) { //takeen
+    BooleanExpression* exp = dynamic_cast<BooleanExpression *> (exp);
     if (exp->getType() != "bool") {
         output::errorMismatch(yylineno);
         exit(0);
     }
-    if (!stackTable->isDefinedInProgram(exp->getValue())) {
+    if (!stackTable.isDefinedInProgram(exp->getValue())) {
         output::errorUndef(yylineno, exp->getValue());
         exit(0);
     }
@@ -81,7 +110,7 @@ BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, const string
 
         setTrueLabel(buffer.freshLabel());
         setFalseLabel(buffer.freshLabel()); 
-        string op = getRelopOp(op);
+        string oper = getRelopOp(op);
         string rightReg = emitTruncation(right->getReg(), lType, rType, true);
         string leftReg = emitTruncation(left->getReg(), lType, lType, true);    
         buffer.emit("br i1 " + reg + ", label %" + getTrueLabel() + ", label %" + getFalseLabel());
@@ -109,7 +138,7 @@ BooleanExpression::BooleanExpression(Node *exp) { //takeen
 // EXP -> Call 
 BooleanExpression::BooleanExpression(Call* call) {
     setValue(call->getValue());
-    setType(stackTable->findSymbol(call->getValue())->getType());
+    setType(stackTable.findSymbol(call->getValue())->getType());
     setReg(call->getReg());
     setTrueLabel(call->getTrueLabel());
     setFalseLabel(call->getFalseLabel());
@@ -119,14 +148,14 @@ BooleanExpression::BooleanExpression(Call* call) {
 
 // EXP -> ID 
 Expression::Expression(Node* terminalExp) {  //takeen
-    if (!stackTable->isDefinedInProgram(terminalExp->getValue())){
+    if (!stackTable.isDefinedInProgram(terminalExp->getValue())){
         output::errorUndef(yylineno, terminalExp->getValue());
         exit(0);
     }
     setValue(terminalExp->getValue());
-    setType(stackTable->findSymbol(terminalExp->getValue())->getType());
+    setType(stackTable.findSymbol(terminalExp->getValue())->getType());
 
-    int offset = stackTable->findSymbol(terminalExp->getValue())->getOffset();
+    int offset = stackTable.findSymbol(terminalExp->getValue())->getOffset();
     string ptr = freshReg();
     string reg = codeGenerator.generateLoad(offset, ptr, terminalExp->getType());
     setReg(reg); 
@@ -254,11 +283,11 @@ Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "")
             buffer.emit(newReg + " = add i32 " + exp->getReg() + ", 0");
 
         string reg = freshReg();
-        setType(stackTable->findSymbol(terminalID->getValue())->getType());
-        setValue(stackTable->findSymbol(terminalID->getValue())->getName());
+        setType(stackTable.findSymbol(terminalID->getValue())->getType());
+        setValue(stackTable.findSymbol(terminalID->getValue())->getName());
         getCallEmitLine(reg, newReg);
         setReg(reg);
-        codeGenerator.generateStore(stackTable->findSymbol(terminalID->getValue())->getOffset(), reg, stackTable->getScope()->getBaseReg());
+        codeGenerator.generateStore(stackTable.findSymbol(terminalID->getValue())->getOffset(), reg, stackTable.getScope()->getBaseReg());
     }
 }
 
@@ -267,7 +296,7 @@ Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "")
 // Statement -> BREAK / CONTINUE
 Statement::Statement(Node* BCNode) : Node(BCNode->getValue(),"") { //takeen
     bool loop=false;
-    for(SymbolTable* sym: stackTable->scopes){ 
+    for(SymbolTable* sym: stackTable.scopes){ 
         if (sym->getIsLoop()){
             loop = true;
         }
@@ -293,20 +322,20 @@ Statement::Statement(Call * call) {};
 
 //Statement -> Type ID SC 
 Statement::Statement(Type* type, Node * id) { //takeen 
-    if (stackTable->isDefinedInProgram(id->getValue())) {
+    if (stackTable.isDefinedInProgram(id->getValue())) {
         output::errorDef(yylineno, id->getValue());
         exit(0);
     }
     id->setType(type->getType());
     id->setReg(freshReg());
-    stackTable->addSymbolToProgram(id->getValue(), false, type->getType(), {});
+    stackTable.addSymbolToProgram(id->getValue(), false, type->getType(), {});
 
     Expression* exp = new Expression(freshReg(), "0", "int");
     buffer.emit(exp->getReg() + " = add i32" + exp->getValue() + ", 0");
 
     string ptr_reg = freshReg();
-    string rbp = stackTable->getScope()->getBaseReg();
-    int offset = stackTable->getScope()->getOffset();
+    string rbp = stackTable.getScope()->getBaseReg();
+    int offset = stackTable.getScope()->getOffset();
 
     //store the value in the stack
     buffer.emit(ptr_reg + " = getelementptr i32, i32* " + rbp + ", i32 " + to_string(offset));
@@ -315,7 +344,7 @@ Statement::Statement(Type* type, Node * id) { //takeen
 
 // Statement -> Type ID Assign Exp SC
 Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need to check if the valueExp is legal func but not considered as function
-    if (stackTable->isDefinedInProgram(id->getValue())) {
+    if (stackTable.isDefinedInProgram(id->getValue())) {
         output::errorDef(yylineno, id->getValue());
         exit(0);
     }
@@ -361,19 +390,19 @@ Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need t
         useless->setReg(exp->getReg());
     }
 
-    stackTable->addSymbolToProgram(id->getValue(), false, type->getType(), {});
+    stackTable.addSymbolToProgram(id->getValue(), false, type->getType(), {});
     id->setType(type->getType());
-    codeGenerator.generateStore(stackTable->findSymbol(id->getValue())->getOffset(), exp->getReg(), type->getType());
+    codeGenerator.generateStore(stackTable.findSymbol(id->getValue())->getOffset(), exp->getReg(), type->getType());
     delete useless;
 }
 
 // Statement -> ID Assign Exp SC
 Statement::Statement(Node * id, Expression * exp) { //maybe i need to check if the valueExp is legal func but not considered as function
- if (!stackTable->isDefinedInProgram(id->getValue())) {
+ if (!stackTable.isDefinedInProgram(id->getValue())) {
         output::errorUndef(yylineno, id->getValue());
         exit(0);
     }
-    if (!LegalType((stackTable->findSymbol(id->getValue()))->getType(), exp->getType())) {
+    if (!LegalType((stackTable.findSymbol(id->getValue()))->getType(), exp->getType())) {
         output::errorMismatch(yylineno);
         exit(0);
     }
@@ -417,9 +446,9 @@ Statement::Statement(Node * id, Expression * exp) { //maybe i need to check if t
         useless->setReg(exp->getReg());
     }
 
-    stackTable->addSymbolToProgram(id->getValue(), false, type->getType(), {});
+    stackTable.addSymbolToProgram(id->getValue(), false, type->getType(), {});
     id->setType(type->getType());
-    codeGenerator.generateStore(stackTable->findSymbol(id->getValue())->getOffset(), exp->getReg(), type->getType());
+    codeGenerator.generateStore(stackTable.findSymbol(id->getValue())->getOffset(), exp->getReg(), type->getType());
     delete useless;
 }
 
@@ -436,26 +465,29 @@ Statement::Statement(const string cond, BooleanExpression* boolexp) {
     }
 
     if (cond == "WHILE") {
-        codeGenerator.generateUncondBranch(stackTable->getScope()->getEntryLabel());
-        codeGenerator.defineLable(stackTable->getScope()->getEntryLabel());
+        codeGenerator.generateUncondBranch(stackTable.getScope()->getEntryLabel());
+        codeGenerator.defineLable(stackTable.getScope()->getEntryLabel());
         codeGenerator.defineLable(boolexp->getFalseLabel());    
-        codeGenerator.generateUncondBranch(stackTable->findInnermostLoopScope()->getEntryLabel());
+        codeGenerator.generateUncondBranch(stackTable.findInnermostLoopScope()->getEntryLabel());
     }
     else if (cond == "IF") {
         codeGenerator.generateUncondBranch(boolexp->getFalseLabel());
         codeGenerator.defineLable(boolexp->getTrueLabel());
     }
     else { //IF-ELSE
-        codeGenerator.generateUncondBranch(stackTable->getScope()->getEntryLabel());
+        codeGenerator.generateUncondBranch(stackTable.getScope()->getEntryLabel());
         codeGenerator.defineLable(boolexp->getTrueLabel());
         codeGenerator.defineLable(getNextLabel()); //Statement Next Label
     }
 }
+ Program::Program() {
+        codeGenerator.emitProgramStart();
+    };
     
 // Statement L Statement R 
 Statement::Statement(Statement* Statement) {
     //open new scope
-    stackTable->popScope();
+    stackTable.popScope();
     codeGenerator.emitProgramEnd();
 }
 

@@ -1,14 +1,13 @@
-#include "SymbolTable.h"
-#include "GeneralFunctions.h"
-//#include "cg.hpp"
+#include "SymbolTable.hpp"
+#include "GeneralFunctions.hpp"
+#include "cg.hpp"
 #include <string>
 #include <vector>
 
-extern CodeBuffer buffer;
+extern StackTable stackTable;
 using namespace std;
 
-using std::vector;
-static vector<pair<string, string>> beginEndLabels;
+//static vector<pair<string, string>> beginEndLabels;
 
 class CodeGenerator{
 //private:
@@ -21,7 +20,6 @@ public:
     void emitFuncRet(); ///generate return instruction   ++++
     void emitProgramStart(); ///emit program start   
     void emitProgramEnd();  /// close function   ++++
-    void emitTypesLiteral(Expression* exp, const string& type); ///emit types literal && getelementptr
     string generateAlloca(); ///generate alloca instruction
     string generateIcmp(const string& op, const string& lhs, const string& rhs);  ///generate iCompare operation "RELOP"
     string generateLoad(int offset, const string& ptr, string expType); ///generate load instruction
@@ -30,7 +28,6 @@ public:
     void generateStore(int offset, const string& valueReg, const string& ptr); ///generate store instruction
     void generateCondBranch(const string& condReg, const string& trueLabel, const string& falseLabel); ///generate conditional branch
     void generateUncondBranch(const string& label); ///generate unconditional branch
-    void generateElfStatements(BooleanExpression* boolExp, bool isElf); ///generate if/else/ statements
     //string generateBinaryInst(const string& expType, const string& lhs, const string& rhs, string op, string inst); ///generate Binop/Relop instruction
     //void generateFunctionCall(Node* terminalID); ///generate function call
     //void generateAssign(const string& lhs, const string& rhs); ///generate assign instruction

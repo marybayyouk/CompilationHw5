@@ -1,5 +1,6 @@
-#include "GeneralFunctions.h"
+#include "GeneralFunctions.hpp"
 
+extern CodeBuffer buffer;
 
 string upperCase(string str) {
     for (char& c : str) {
@@ -33,15 +34,6 @@ bool isLegalFunc(string func, bool functionType) {
     return true;
 }
 
-bool LegalType(string typeOne, string typeTwo) {
-    if (typeOne == "INT" && typeTwo == "BYTE") {
-        return true;
-    } else if (typeOne == typeTwo) {
-        return true;
-    }
-    // need to check 3rd legal assignment (byte) (int) with casting
-    return false;
-}
 
 string TypeToLLVM(string type) {
     if (type == "INT") {

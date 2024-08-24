@@ -1,7 +1,7 @@
 %{
-#include "ProgramTypes.h"
-#include "GeneralFunctions.h"
-#include "CodeGenerator.h"
+#include "ProgramTypes.hpp"
+#include "GeneralFunctions.hpp"
+#include "CodeGenerator.hpp"
 #include "cg.hpp"
 #include "hw3_output.hpp"
 
@@ -49,27 +49,28 @@ Statement: LBRACE ADDSCOPE Statements REMOVESCOPE RBRACE                { $$ = n
 
             | RETURN SC                                                 { codeGenerator.emitFuncRet(); } 
 
-            | IF LPAREN IfMark RPAREN ADDSCOPE Statement REMOVESCOPE    { $$ = new Statement("IF", dynamic_cast<BooleanExpression*>($3)); } 
-           
-
-            | IF LPAREN IfMark RPAREN ADDSCOPE Statement ELSE ElseMark  { buffer.emit(($3)->getFalseLable() + ":"); } ADDSCOPE Statement
+            | IF LPAREN { isBoolExp(dynamic_cast<Expression*>($1)); $$=$1; } RPAREN ADDSCOPE Statement REMOVESCOPE    
+                                                                        { $$ = new Statement("IF", dynamic_cast<BooleanExpression*>($3)); } 
+        
+            | IF LPAREN { isBoolExp(dynamic_cast<Expression*>($1)); $$=$1; } Exp RPAREN ADDSCOPE Statement
+              ELSE { dynamic_cast<Statement*>($6)->afterElse(); buffer.emit((dynamic_cast<BooleanExpression*>($3))->getFalseLabel() + ":"); }  ADDSCOPE Statement
                                                                         {
                                                                             $$ = new Statement("ELF", dynamic_cast<BooleanExpression*>($3));
                                                                             stackTable.popScope(); 
                                                                         }  
-                                                                        REMOVESCOPE { }  
+                                                                        REMOVESCOPE {}  
 
             | WHILE NEWLOOPSCOPE LPAREN Exp RPAREN                      {    
-                                                                            Expression* exp = dynamic_cast<Expression*>($4);
-                                                                            buffer.emit(exp->getTrueLable() + ":");
-                                                                            Statement { $$ = new Statement("WHILE", dynamic_cast<BooleanExpression*>($3)); }          
+                                                                            BooleanExpression* exp = dynamic_cast<BooleanExpression*>($4);
+                                                                            buffer.emit(exp->getTrueLabel() + ":");
+                                                                            Statement { $$ = new Statement("WHILE", dynamic_cast<BooleanExpression*>($3)) };          
                                                                             endingLoopMarker();                                              
                                                                         } 
 
             | BREAK SC                                                  { $$ = new Statement($1); }
             | CONTINUE SC                                               { $$ = new Statement($1); }
 
-Call:   ID LPAREN Exp RPAREN                                            { $$ = new Call($1, dynamic_cast<BooleanExpression*>($3));} 
+Call:   ID LPAREN Exp RPAREN                                            { $$ = new Call($1, dynamic_cast<Expression*>($3));} 
 
 Type:   INT                                                             { $$ = new Type("int"); }
         | BYTE                                                          { $$ = new Type("byte"); } 
@@ -89,13 +90,21 @@ Exp:    LPAREN Exp RPAREN                                               { $$ = n
         | NUM                                                           { $$ = new Num($1); }
         | NUM B                                                         { $$ = new NumB($1); }
         | STRING                                                        { $$ = new String($1); }
-        | TRUE                                                          { $$ = new Bool("true"); }
-        | FALSE                                                         { $$ = new Bool("false"); }
+        | TRUE                                                          { $$ = new Bool($1, "true"); }
+        | FALSE                                                         { $$ = new Bool($1, "false"); }
 
-        | NOT Exp                                                       { $$ = BooleanExpression(dynamic_cast<BooleanExpression*($2), "not")}
+        | NOT Exp                                                       { $$ = new BooleanExpression(dynamic_cast<Expression*>($2), "not")}
 
-        | Exp AND Exp EmitAnd Exp                                       { $$ = new BooleanExpression($1, $3, "AND");} 
-        | Exp OR Exp  EmitOr Exp                                        { $$ = new BooleanExpression($1, $3, "OR"); }
+        | Exp AND Exp { buffer.emit(dynamic_cast<BooleanExpression*>($1)->getTrueLabel() + ":" ); } Exp                                      
+                                                                        { 
+                                                                            $$ = new BooleanExpression($1, $3, "AND");
+                                                                        } 
+
+        | Exp OR Exp { buffer.emit(dynamic_cast<BooleanExpression*>($1)->getFalseLabel() + ":" ); } Exp                                        
+                                                                        { 
+                                                                            $$ = new BooleanExpression($1, $3, "OR");
+                                                                        }
+
         | Exp EQ Exp                                                    { $$ = new BooleanExpression($1, $3, "EQ"); }
         | Exp NE Exp                                                    { $$ = new BooleanExpression($1, $3, "NE"); }
         | Exp GE Exp                                                    { $$ = new BooleanExpression($1, $3, "GE"); }
@@ -124,34 +133,16 @@ REMOVESCOPE:                                                            {
 ;
 ///handle IF///
 IFMARK: Exp                                                             { 
-                                                                            isBoolExp($1); $$=$1; codeGenerator.generateElfStatements(dynamic_cast<BooleanExpression*> (Exp), true);
-                                                                        }
-///handle ELSE///
-ELSEMARK:                                                               {
-                                                                            Statement* currSate = dynamic_cast<Statement*>($6);
-                                                                            currSate->afterElse();
-   
-                                                                        }       
+                                                                            codeGenerator.generateElfStatements(dynamic_cast<BooleanExpression*> (Exp), true);
+                                                                        }                           
 ;
-///Emit And///
-EMITAND:                                                                {
-                                                                            buffer.emit(dynamic_cast<Expression*>($1)->getTrueLable() + ":" );
-                                                                        }
-;
-
-///Emit Or///
-EMITOR:                                                                 {
-                                                                            buffer.emit(dynamic_cast<Expression*>($1)->getFalseLable() + ":" );
-                                                                        }
-;
-
 %%
 StackTable stackTable = StackTable();
 CodeGenerator codeGenerator = CodeGenerator();
 
 int main() 
 {
-    codeGenerator.emitGlobal();
+    codeGenerator.emitGlobals();
     int res = yyparse();
     buffer.printGlobalBuffer();
     buffer.printCodeBuffer();

@@ -1,8 +1,7 @@
 #include <string>
-#include "Cg.hpp"
+#include "cg.hpp"
 
 using namespace std;
-extern CodeBuffer buffer;
 extern int yylineno;
 
 
