@@ -49,10 +49,10 @@ Statement: LBRACE ADDSCOPE Statements REMOVESCOPE RBRACE                { $$ = n
 
             | RETURN SC                                                 { codeGenerator.emitFuncRet(); } 
 
-            | IF LPAREN { isBoolExp(dynamic_cast<Expression*>($1)); $$=$1; } RPAREN ADDSCOPE Statement REMOVESCOPE    
+            | IF LPAREN CHECKBOOL RPAREN ADDSCOPE Statement REMOVESCOPE    
                                                                         { $$ = new Statement("IF", dynamic_cast<BooleanExpression*>($3)); } 
         
-            | IF LPAREN { isBoolExp(dynamic_cast<Expression*>($1)); $$=$1; } Exp RPAREN ADDSCOPE Statement
+            | IF LPAREN CHECKBOOL RPAREN ADDSCOPE Statement 
               ELSE { dynamic_cast<Statement*>($6)->afterElse(); buffer.emit((dynamic_cast<BooleanExpression*>($3))->getFalseLabel() + ":"); }  ADDSCOPE Statement
                                                                         {
                                                                             $$ = new Statement("ELF", dynamic_cast<BooleanExpression*>($3));
@@ -83,7 +83,7 @@ Exp:    LPAREN Exp RPAREN                                               { $$ = n
         | Exp DIVIDE Exp                                                { $$ = new Expression($1, $3, "DIV"); }
         | Exp MULTIPLY Exp                                              { $$ = new Expression($1, $3, "mul"); }
 
-        | ID                                                            { $$ = new Expression($1); } 
+        | ID                                                            { $$ = new Expression($1);} 
 
         | Call                                                          { $$ = new BooleanExpression($1); }
 
@@ -135,6 +135,12 @@ REMOVESCOPE:                                                            {
 IFMARK: Exp                                                             { 
                                                                             codeGenerator.generateElfStatements(dynamic_cast<BooleanExpression*> (Exp), true);
                                                                         }                           
+;
+CHECKBOOL: Exp                                                          {   
+                                                                            Expression* newExpression = new Expression($1);
+                                                                            isBoolExp(newExpression); 
+                                                                            $$=$1; 
+                                                                        }
 ;
 %%
 StackTable stackTable = StackTable();

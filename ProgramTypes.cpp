@@ -54,7 +54,8 @@ void beginingLoopMarker(string beginLabel) {
 
 // Expression -> NOT Expression
 BooleanExpression::BooleanExpression(Node* boolexp, const string op) { //takeen
-    BooleanExpression* exp = dynamic_cast<BooleanExpression *> (exp);
+    BooleanExpression* exp = new BooleanExpression();
+    exp->setReg(boolexp->getReg());
     if (exp->getType() != "bool") {
         output::errorMismatch(yylineno);
         exit(0);
@@ -118,9 +119,10 @@ BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, const string
 }
 
 // Exp -> LParen Exp RParen
-BooleanExpression::BooleanExpression(Node *exp) { //takeen
+BooleanExpression::BooleanExpression(Node *exp) { 
     if(exp->getType() == "bool") {
-        BooleanExpression* boolExp = dynamic_cast<BooleanExpression *> (exp);
+        BooleanExpression* boolExp = new BooleanExpression();
+        boolExp->setReg(exp->getReg());
         setType("bool");
         setValue(boolExp->getValue());
         setTrueLabel(boolExp->getTrueLabel());
@@ -195,7 +197,7 @@ Expression::Expression(Type* type, Node* exp) { // takeen
 }
 
 // Exp -> Exp Binop Exp
-Expression::Expression(Node* leftExp, Node* rightExp, const string op) { ///takeen
+Expression::Expression(Node* leftExp, Node* rightExp, const string op) { 
     Expression* left = dynamic_cast<Expression *> (leftExp);
     Expression* right = dynamic_cast<Expression *> (rightExp);
     string lType = left->getType();
@@ -246,12 +248,13 @@ NumB::NumB(Node* expression) : Expression() { //takeen
 
 //////////////////////////////////////////Call//////////////////////////////////////////
 
-// Call -> ID LPAREN RPAREN 
-Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "") { //takeen
+// Call -> ID LPAREN Exp RPAREN 
+Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "", "") { 
     if (!(terminalID->getValue() == "print") && !(terminalID->getValue() == "printi") && !(terminalID->getValue() == "readi")) {
         output::errorUndefFunc(yylineno, terminalID->getValue());
         exit(0);
     }
+
     //PRINT FUNCTION
     if ((terminalID->getValue() == "print")) {
         if (exp->getType() != "string") {
@@ -261,9 +264,9 @@ Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "")
         getCallEmitLine(terminalID->getValue(), exp->getReg());
     }
 
-    string newReg = freshReg();
     //PRINTI FUNCTION
-    if (terminalID->getValue() == "printi") {
+    else if (terminalID->getValue() == "printi") {
+        string newReg = freshReg();
         if (exp->getType() != "byte" && exp->getType() != "int") {
             output::errorPrototypeMismatch(yylineno,terminalID->getValue(), "int");
             exit(0);
@@ -276,6 +279,7 @@ Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "")
     }
     //MUST BE READI FUNCTION
     else { 
+        string newReg = freshReg();
         if(exp->getType() != "byte" && exp->getType() != "int") {
             output::errorPrototypeMismatch(yylineno,terminalID->getValue(), "int");
             exit(0);
@@ -462,6 +466,7 @@ Statement::Statement(Node * id, Expression * exp) { //maybe i need to check if t
 
 // Statement -> IF|IF-ELSE|WHILE LP EXP RP SS 
 Statement::Statement(const string cond, BooleanExpression* boolexp) {
+    // cout<<"before"<<endl;
     if (boolexp->getType() == "byte" && (stoi(boolexp->getValue()) > 255 || stoi(boolexp->getValue()) < 0)) {
         output::errorByteTooLarge(yylineno, boolexp->getValue());
         exit(0);
@@ -478,6 +483,7 @@ Statement::Statement(const string cond, BooleanExpression* boolexp) {
         codeGenerator.generateUncondBranch(stackTable.findInnermostLoopScope()->getEntryLabel());
     }
     else if (cond == "IF") {
+        cout<<"here"<<endl;
         codeGenerator.generateUncondBranch(boolexp->getFalseLabel());
         codeGenerator.defineLable(boolexp->getTrueLabel());
     }

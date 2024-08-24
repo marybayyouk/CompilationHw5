@@ -17,7 +17,7 @@ class Node {
     string value;
     string type;
 public:
-    Node( string reg = "", string val = "", string type = "") : reg(reg), value(val), type(type) {};
+    Node(string val = "", string type = "" , string reg = "" ) : value(val), type(type), reg(reg) {};
     virtual ~Node() {};
     std::string getValue() const { return value; }
     std::string getType() const { return type; }
@@ -29,12 +29,12 @@ public:
 
 class Type : public Node {
 public:
-    Type(string type) : Node("", "", type) {};
+    Type(string type) : Node( "", type, "") {};
 };
 
 class iD : public Node {
 public:
-    iD(Node* id) : Node(id->getValue(), "ID") {
+    iD(Node* id) : Node(id->getValue(), "ID", "") {
     }
 };
 
@@ -59,7 +59,7 @@ class Expression : public Node {
     //bool isFunction;
 public:
     // Expression() = default;
-    Expression( string reg = "", string val = "", string type = "") : Node(reg, val, type) {};
+    Expression(string val = "", string type = "", string reg = "" ) : Node(val, type, reg) {};
     // Expression(string reg, string value, string type) : Node(reg, value, type) {};
     Expression(Node* terminalExp); // Expression -> ID
     Expression(Type* type, Node* exp); // Expression -> LPAREN Type RPAREN Exp
@@ -71,7 +71,7 @@ class BooleanExpression : public Expression {
     string trueLabel;// target label for a jump when condition B evaluates to true
     string falseLabel; //target label for a jump when condition B evaluates to false
 public:
-    BooleanExpression() : Expression(freshReg(), "", "bool") {};
+    BooleanExpression() : Expression("", "bool", freshReg()) {};
     BooleanExpression(Call* call); // Exp -> Call
     BooleanExpression(Node* exp); // Exp -> LPAREN Exp RPAREN
     BooleanExpression(Node* leftExp, Node* rightExp, const string op); // Exp -> Exp RELOP/AND/OR Exp
