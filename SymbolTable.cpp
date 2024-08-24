@@ -15,11 +15,12 @@ SymbolTable::SymbolTable(int maxOff,bool isloop) : symbols() {
 }
 
 SymbolTable::~SymbolTable() {
-    for (Symbol* symbol : symbols) 
-        if(symbol) {
-         delete symbol; 
-         symbol = nullptr; 
+    for (Symbol* symbol : symbols) {
+        if (symbol) {  // Ensure the pointer is non-null
+            delete symbol;
         }
+    }
+    symbols.clear();  // Optionally clear the vector to remove dangling pointers
 }
 
 bool SymbolTable::isDefinedInTable(const string& name) {
@@ -55,44 +56,40 @@ void SymbolTable::addSymbol(Symbol* symbol) {
 
 
 /////////////////////////////////////////////////StackTable//////////////////////////////////////////////////////////
-StackTable::StackTable() : scopes(), scopesOffset() {
+StackTable::StackTable() {
     pushScope(false);
     scopesOffset.push_back(0);
-    (scopes.back())->addSymbol(new Symbol("print", 0, true, "string", "void"));
-    (scopes.back())->addSymbol(new Symbol("printi", 0, true, "int", "void"));
-    (scopes.back())->addSymbol(new Symbol("readi", 0, true, "int", "int"));
-    // (scopes.back()->addSymbol(new Symbol("true", 0, false, "bool", {""})));
-    // (scopes.back()->addSymbol(new Symbol("false", 0, false, "bool", {""})));
-    // for (const Symbol* symbol : getScope()->symbols) {
-    //     cout<<"the name"<< endl;
-    //     cout<<symbol->getName()<<endl;
-    // }
+    Symbol* printS = new Symbol("print", 0, true, "string", "void");
+    Symbol* printIs = new Symbol("printi", 0, true, "int", "void");
+    Symbol* readIs = new Symbol("readi", 0, true, "int", "int");
+    (scopes.back())->addSymbol(printS);
+    (scopes.back())->addSymbol(printIs);
+    (scopes.back())->addSymbol(readIs);
 
     scopesOffset.back() = 3;
 }
 
 StackTable::~StackTable() {
     for(SymbolTable* scope : scopes) {
-        if(scope) {
-            cout<<scope->getIsLoop()<<endl;
+        if (scope) {  // Ensure scope is non-null before deleting
             delete scope;
-            scope = nullptr;
         }
     }
+    scopes.clear();  // Optionally clear the vector to remove dangling pointers
 }
 
+
 void StackTable::pushScope(bool isLoop) {
-     int currOffset = 0;
+    int currOffset = 0;
+    SymbolTable* symTable = new SymbolTable(currOffset, isLoop);
+    scopes.push_back(symTable);
     if(scopesOffset.size() > 0) {
         currOffset = scopesOffset.back();
     }
-    SymbolTable* symTable = new SymbolTable(currOffset, isLoop);
-    scopes.push_back(symTable);
     if(scopes.size() > 0) {
         scopesOffset.push_back(currOffset); 
-        scopes.back()->setBaseReg(scopes.back()->getBaseReg()); 
+        symTable->setBaseReg(scopes.back()->getBaseReg()); 
    }
-    scopes.push_back(symTable);
     if(isLoop) {
         handleLoopScope(symTable);
         symTable->setEntryLable(buffer.freshLabel());
@@ -122,7 +119,7 @@ void StackTable::popScope() {
     }
     scopes.pop_back();
     scopesOffset.pop_back();
-    // delete temp;
+    delete temp;
 }
 
 bool StackTable::isDefinedInProgram(const string& name) {

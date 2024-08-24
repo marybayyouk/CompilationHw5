@@ -36,7 +36,7 @@ void yyerror(const char* message);
 %right ELSE   
 
 %%
-Program: Statements                                                     { $$ = new Program(); }                                                                               
+Program:    Statements                                                  { $$ = new Program(); } REMOVESCOPE                                                                              
 Statements: Statement                                                   { $$ = new Statements(dynamic_cast<Statement*>($1)); }
             | Statements Statement                                      { $$ = new Statements(dynamic_cast<Statements*>($1), dynamic_cast<Statement*>($2)); }
                                                                         
@@ -49,18 +49,20 @@ Statement: LBRACE ADDSCOPE Statements REMOVESCOPE RBRACE                { $$ = n
 
             | RETURN SC                                                 { codeGenerator.emitFuncRet(); } 
 
-            | IF LPAREN CHECKBOOL RPAREN ADDSCOPE Statement REMOVESCOPE    
-                                                                        { $$ = new Statement("IF", dynamic_cast<BooleanExpression*>($3)); } 
+            | IF LPAREN CHECKBOOL RPAREN ADDSCOPE Statement     
+                                                                        { $$ = new Statement("IF", dynamic_cast<BooleanExpression*>($3)); } REMOVESCOPE 
         
             | IF LPAREN CHECKBOOL RPAREN ADDSCOPE Statement 
               ELSE {                                                        dynamic_cast<Statement*>($6)->afterElse();
                                                                             BooleanExpression* boolExp = new BooleanExpression($3);
-                                                                            buffer.emit(boolExp->getFalseLabel() + ":");} ADDSCOPE Statement
+                                                                            buffer.emit(boolExp->getFalseLabel() + ":");}
+                                                                             
                                                                         {
                                                                             BooleanExpression* boolExpStatment = new BooleanExpression($3);
+                                                                            stackTable.popScope();
                                                                             $$ = new Statement("ELF", boolExpStatment);
-                                                                            stackTable.popScope(); 
-                                                                        }  
+                                                                             
+                                                                        } ADDSCOPE Statement  
                                                                         REMOVESCOPE {}  
 
             | WHILE NEWLOOPSCOPE LPAREN Exp RPAREN                      {    

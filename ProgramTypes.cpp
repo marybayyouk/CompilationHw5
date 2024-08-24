@@ -198,11 +198,10 @@ Expression::Expression(Node* leftExp, Node* rightExp, const string op) {
     Expression* right = dynamic_cast<Expression *> (rightExp);
     string lType = left->getType();
     string rType = right->getType();
-
-    if (lType != "int" || lType != "byte" || rType != "int" || rType != "byte") {
-        output::errorMismatch(yylineno);
-        exit(0);
-    }
+    if ((lType != "int" && lType != "byte") || (rType != "int" && rType != "byte")) {
+            output::errorMismatch(yylineno);
+            exit(0);
+        }
     ///SET TYPE FOR BINOP 
     this->setReg(freshReg()); 
     if(op == "DIV") { 
@@ -486,15 +485,14 @@ Statement::Statement(const string cond, BooleanExpression* boolexp) {
     }
 }
  Program::Program() {
-        stackTable.popScope();
         codeGenerator.emitProgramEnd();
     };
     
 // Statement L Statement R 
 Statement::Statement(Statement* Statement) {
     //open new scope
-    stackTable.popScope();
-    codeGenerator.emitProgramEnd();
+    // stackTable.popScope();
+    // codeGenerator.emitProgramEnd();
 }
 
 void Statement::afterElse() {
