@@ -18,6 +18,7 @@ SymbolTable::~SymbolTable() {
     for (Symbol* symbol : symbols) 
         if(symbol) {
          delete symbol; 
+         symbol = nullptr; 
         }
 }
 
@@ -74,6 +75,7 @@ StackTable::~StackTable() {
     for(SymbolTable* scope : scopes) {
         if(scope) {
             delete scope;
+            scope = nullptr;
         }
     }
 }
@@ -116,7 +118,7 @@ void StackTable::popScope() {
     }
     scopes.pop_back();
     scopesOffset.pop_back();
-    // delete temp;1
+    // delete temp;
 }
 
 bool StackTable::isDefinedInProgram(const string& name) {
