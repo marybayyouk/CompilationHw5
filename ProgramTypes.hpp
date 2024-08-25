@@ -75,6 +75,7 @@ class BooleanExpression : public Expression {
     string trueLabel;// target label for a jump when condition B evaluates to true
     string falseLabel; //target label for a jump when condition B evaluates to false
 public:
+    BooleanExpression() = default;
     BooleanExpression(Call* call); // Exp -> Call
     BooleanExpression(Node* exp); // Exp -> LPAREN Exp RPAREN
     BooleanExpression(Node* leftExp, Node* rightExp, const string op); // Exp -> Exp RELOP/AND/OR Exp
@@ -86,7 +87,7 @@ public:
     void setFalseLabel(std::string label) { falseLabel = label; }
 };
 
-class Bool : public Node { 
+class Bool : public BooleanExpression { 
 public:
     Bool(Node* exp, string trueFalse);
 };

@@ -50,7 +50,7 @@ Statement: LBRACE ADDSCOPE Statements REMOVESCOPE RBRACE                { $$ = n
             | RETURN SC                                                 { codeGenerator.emitFuncRet(); } 
 
             | IF LPAREN CHECKBOOL RPAREN ADDSCOPE Statement     
-                                                                        { $$ = new Statement("IF", dynamic_cast<BooleanExpression*>($3)); } REMOVESCOPE 
+                                                                        { $$ = new Statement("IF", dynamic_cast<BooleanExpression*>($3)); stackTable.popScope();}  
         
             | IF LPAREN CHECKBOOL RPAREN ADDSCOPE Statement 
               ELSE {                                                        dynamic_cast<Statement*>($6)->afterElse();
@@ -144,7 +144,7 @@ IFMARK: Exp                                                             {
 CHECKBOOL: Exp                                                          {   
                                                                             BooleanExpression* newExpression = new BooleanExpression($1);
                                                                             codeGenerator.defineLable(newExpression->getTrueLabel());
-                                                                            $$=$1;
+                                                                            $$=newExpression;
                                                                         }
 ;
 %%

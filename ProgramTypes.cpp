@@ -225,10 +225,10 @@ Bool::Bool(Node* exp, string trueFalse) {  // Exp -> True / False
     //create new labels for the true and false branches
     string newTrueL = CodeBuffer::instance().freshLabel();
     string newFalseL = CodeBuffer::instance().freshLabel();
-    exp->setTrueLabel(newTrueL);
-    exp->setFalseLabel(newFalseL);
-    exp->setType("bool");
-    exp->setValue(trueFalse);
+    setTrueLabel(newTrueL);
+    setFalseLabel(newFalseL);
+    setType("bool");
+    setValue(trueFalse);
 
     //emit the branch instruction
     if (trueFalse == "true") { 
