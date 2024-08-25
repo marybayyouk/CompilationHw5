@@ -16,13 +16,13 @@ void generateElfStatements(BooleanExpression* exp, bool isElf) {
 }
 
 void emitTypesLiteral(Expression* exp, const string& type) {
-    if (type == "BYTE") ///NUMB
+    if (type == "byte") ///NUMB
         buffer.emit(exp->getReg() + " = add i18 " + exp->getValue() + ", 0");
-    else if (type == "BOOL") 
+    else if (type == "bool") 
         buffer.emit(exp->getReg() + " = add i1 " + exp->getValue() + ", 0");
-    else if (type == "INT") ///NUM
+    else if (type == "int") ///NUM
         buffer.emit(exp->getReg() + " = add i32 " + exp->getValue() + ", 0"); 
-    else if (type == "STRING") {
+    else if (type == "string") {
         string globalReg = freshGlobalReg();
         string strReg = freshReg();
         ///MAYBE NEXT LINE SHOULD BE -1 AND NOT +1
@@ -101,7 +101,7 @@ BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, const string
         }
     }
     else { //RELOP
-        if (lType != "int" || lType != "byte" || rType != "int" || rType != "byte") {
+        if ((lType != "int" && lType != "byte") || (rType != "int" && rType != "byte")) {
             output::errorMismatch(yylineno);
             exit(0);
         }
