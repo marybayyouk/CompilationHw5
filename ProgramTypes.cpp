@@ -227,6 +227,8 @@ Bool::Bool(Node* exp, string trueFalse) {  // Exp -> True / False
     string newFalseL = CodeBuffer::instance().freshLabel();
     exp->setTrueLabel(newTrueL);
     exp->setFalseLabel(newFalseL);
+    exp->setType("bool");
+    exp->setValue(trueFalse);
 
     //emit the branch instruction
     if (trueFalse == "true") { 
@@ -404,17 +406,17 @@ Statement::Statement(Type* type, Node * id) { //takeen
 
 // Statement -> Type ID Assign Exp SC //regFixed
 Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need to check if the valueExp is legal func but not considered as function
-     if (!stackTable.isDefinedInProgram(id->getValue())) {
-        output::errorUndef(yylineno, id->getValue());
+ if (stackTable.isDefinedInProgram(id->getValue())) {
+        output::errorDef(yylineno, id->getValue());
         exit(0); 
     }
     // check idType == expType
-    if (!LegalType((stackTable.findSymbol(id->getValue()))->getType(), exp->getType())) {
+    if (!LegalType(type->getType(), exp->getType())) {
         output::errorMismatch(yylineno);
         exit(0);
     }
     // check if id == illegal byte value
-    if (id->getType() == "byte" && (stoi(exp->getValue()) > 255 || stoi(exp->getValue()) < 0)) {
+    if (type->getType() == "byte" && (stoi(exp->getValue()) > 255 || stoi(exp->getValue()) < 0)) {
         output::errorByteTooLarge(yylineno, exp->getValue());
         exit(0);
     }
