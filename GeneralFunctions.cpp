@@ -53,7 +53,7 @@ string getBinopOp(string op) {
     } else if (op == "MUL") {
         return "mul";
     } 
-    
+        
     return "DIV";
 }
 
@@ -103,7 +103,7 @@ string getCallEmitLine(string funcName, string reg) { //takeen
 }
 
 string emitTruncation(const string& reg, const string& type1, const string& type2, bool is2Types) { //takeen
-    string trunReg = freshReg();
+    string trunReg = buffer.freshReg();;
     if(is2Types) {
         if (type1 == "byte" && type2 == "int") { 
             buffer.emit(trunReg + " = trunc i32 " + reg + " to i8");

@@ -10,8 +10,8 @@ CodeBuffer buffer;
 SymbolTable::SymbolTable(int maxOff,bool isloop) : symbols() { 
     currentOffset = maxOff;
     isLoop = isloop;
-    this->setBaseReg("");
-    this->setNextLabel("");
+    this->setBaseReg("UnInatialized Base Register !!");
+    this->setNextLabel("UnInitialized Next Label");
 }
 
 SymbolTable::~SymbolTable() {
@@ -85,11 +85,11 @@ void StackTable::pushScope(bool isLoop) {
     scopes.push_back(symTable);
     if(scopesOffset.size() > 0) {
         currOffset = scopesOffset.back();
-    }
-    if(scopes.size() > 0) {
         scopesOffset.push_back(currOffset); 
         symTable->setBaseReg(scopes.back()->getBaseReg()); 
-   }
+    } else {
+        symTable->setBaseReg(buffer.freshReg());
+    }
     if(isLoop) {
         handleLoopScope(symTable);
         symTable->setEntryLable(buffer.freshLabel());

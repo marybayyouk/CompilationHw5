@@ -41,36 +41,45 @@ LEGAL:
  ret void
 }
 define i32 @main(){
-%reg1 = alloca i32, i32 50
+%r2 = alloca i32, i32 50
+call void @print(i8* %r3);
+"hello"
+%r5 = getelementptr i32, i32* %r1, i32 3
+store i32 %r4, i32* %r5
+br label label_4
+br label label_4
+%r6 = phi i32 [ 1, %label_2 ], [ 0, %label_3 ]
+%r7 = getelementptr i32, i32* %r1, i32 4
+store i32 %r6, i32* %r7
+%r8 = getelementptr i32, i32* %r1, i32 4
+%r9 = load i32, i32* %r8
+%r10 = icmp ne i32 1, 
+br i1 %r10, label label_5, label label_6
+value: val ; trueLabel: value: val ; trueLabel: label_5:
+call void @print(i8* %r11);
+"val is true"
+label_7:
+value: val ; falseLabel: value: val ; falseLabel: :
+br label 
+value: val ; trueLabel: value: val ; trueLabel: :
 :
-br label %********label_2
-:
-br label %********label_2
-********label_2:
-%reg2 = phi i32 [ 1, % ], [ 0, % ]
-%reg3 = getelementptr i32, i32* , i32 3
-store i32 %reg2, i32* %reg3
-%reg4 = getelementptr i32, i32* , i32 3
-%reg5 = load i32, i32* %reg4
-%reg6 = icmp ne i32 1, 
-br i1 %reg6, label %********label_3, label %********label_4
-********label_3:
-********label_5:
-:
-br label %
-:
-:
-:
-br label %
-:
-********label_7:
-********label_8:
-:
-br label %
-:
-br label %
-:
-br label %
-:
+call void @print(i8* %r12);
+"val is false"
+value: true ; trueLabel: value: true ; trueLabel: :
+call void @print(i8* %r13);
+"true"
+br label value: true ; falseLabel: value: true ; falseLabel: 
+value: true ; trueLabel: value: true ; trueLabel: :
+value: false ; falseLabel: label_7:
+value: false ; trueLabel: label_8:
+value: false ; falseLabel: :
+br label value: true ; falseLabel: 
+value: false ; trueLabel: :
+br label value:  ; trueLabel: 
+value:  ; trueLabel: value:  ; trueLabel: :
+call void @print(i8* %r14);
+"true"
+br label value:  ; falseLabel: value:  ; falseLabel: 
+value:  ; trueLabel: value:  ; trueLabel: :
 ret i32 0
 }

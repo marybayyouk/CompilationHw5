@@ -6,7 +6,7 @@ extern CodeBuffer buffer;
 
 void CodeGenerator::emitGlobals()
 {
-    string rbp = freshReg();
+    string rbp = buffer.freshReg();;
     stackTable.getScope()->getBaseReg() = rbp;
     buffer.emit("define i32 @main(){");
     buffer.emit(rbp + " = alloca i32, i32 50");
@@ -68,8 +68,8 @@ void CodeGenerator::defineLable(const string& label) {
 }
 
 void CodeGenerator::checkDivZero(const string& reg) { ///NEED TO CHECK IT LATER NOT SURE IF IT WORKS
-    string zeroR = freshReg();
-    string compareReg = freshReg();
+    string zeroR = buffer.freshReg();;
+    string compareReg = buffer.freshReg();;
     string IllegalDivLabel = allocateLable("divByZero");
     string LegalDivLable = allocateLable("nonDivByZero");
 
@@ -89,7 +89,7 @@ void CodeGenerator::emitProgramStart() {
 }
 
 string CodeGenerator::generateAlloca() {
-    string allocaReg = freshReg();
+    string allocaReg = buffer.freshReg();;
     buffer.emit(allocaReg + " = alloca i32 50"); ///allocate stack
     return allocaReg;
 }
@@ -98,7 +98,7 @@ string CodeGenerator::generateAlloca() {
 string CodeGenerator::generateLoad(int offset, const string& ptr, string expType) {
     if (offset < 0)
         return "%" + to_string(offset);
-    string stackReg = freshReg();
+    string stackReg = buffer.freshReg();;
     //get the address of the stack
     buffer.emit(stackReg + " = getelementptr i32, i32* " + ptr + ", i32 " + to_string(offset));
     
@@ -106,7 +106,7 @@ string CodeGenerator::generateLoad(int offset, const string& ptr, string expType
 }
 
 string CodeGenerator::generateIcmp(const string& op, const string& lhs, const string& rhs) {
-    string resReg = freshReg();
+    string resReg = buffer.freshReg();;
     buffer.emit(resReg + " = icmp " + op + " i32 " + lhs + ", " + rhs);
     return resReg;
 }
@@ -116,7 +116,7 @@ void CodeGenerator::generateGlobalVar(const string& name, const string& type) {
 }
 
 void CodeGenerator::generateStore(int offset, const string& valueReg, const string& ptr) { //Takeen
-    string stackReg = freshReg();
+    string stackReg = buffer.freshReg();;
     //get the address of the stack
     buffer.emit(stackReg + " = getelementptr i32, i32* " + ptr + ", i32 " + to_string(offset));
     //store the value in the stack
@@ -125,14 +125,12 @@ void CodeGenerator::generateStore(int offset, const string& valueReg, const stri
 }
 
 void CodeGenerator::generateCondBranch(const string& condReg, const string& trueLabel, const string& falseLabel) {
-    buffer.emit("br i1 " + condReg + ", label %" + trueLabel + ", label %" + falseLabel);
+    buffer.emit("br i1 " + condReg + ", label " + trueLabel + ", label " + falseLabel);
 }   
 
 void CodeGenerator::generateUncondBranch(const string& label) { //takeen 
-    buffer.emit("br label %" + label);
+    buffer.emit("br label " + label);
 }
-
-
 
 // Break and Continue
 void CodeGenerator::generateJumpStatement(const string& label) { //takeen
@@ -162,7 +160,7 @@ void CodeGenerator::generateJumpStatement(const string& label) { //takeen
 // }
 
 // void CodeGenerator::generatePhi(const string& resReg, const string& type, const vector<pair<string, string>>& labelsAndRegs) {
-//     string phiReg = freshReg();
+//     string phiReg = buffer.freshReg();;
 //     string phiStr = "phi i32 ";
 //     for (auto& labelAndReg : labelsAndRegs) 
 //         phiStr += "[ " + labelAndReg.first + ", %" + labelAndReg.second + " ], ";
