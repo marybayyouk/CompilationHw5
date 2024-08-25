@@ -1,5 +1,6 @@
 #include "GeneralFunctions.hpp"
 
+using namespace std;
 extern CodeBuffer buffer;
 
 string upperCase(string str) {
@@ -71,10 +72,13 @@ string getRelopOp(string op) {
     return "sge";
 }
 
-string freshReg() { 
-    int static currReg = 1;
-    return "%" + to_string(currReg++);
-}
+// string freshReg() { 
+//     int static currReg = 1;
+//     // std::stringstream reg;
+//     // reg << "%r" << ++currReg;
+//     //return reg.str();
+//     return "currReg";
+// }
 
 string freshGlobalReg() {
     int static currReg = 1;

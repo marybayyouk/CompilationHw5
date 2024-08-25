@@ -13,6 +13,7 @@ class CodeBuffer{
 	std::vector<std::string> buffer;
 	std::vector<std::string> globalDefs;
 	int labels_num = 1;
+	int register_num = 1;
 public:
 	CodeBuffer();
 	CodeBuffer(CodeBuffer const&);
@@ -24,6 +25,7 @@ public:
 
 	//generates a jump location label for the next command and returns it
 	std::string freshLabel();
+	std::string freshReg();
 
 	//writes command to the buffer, returns its location in the buffer
 	int emit(const std::string &command);

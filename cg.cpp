@@ -17,6 +17,13 @@ string CodeBuffer::freshLabel(){
 	return label.str();
 }
 
+string CodeBuffer::freshReg() {
+	std::stringstream reg;
+	reg << "%r"  << ++register_num;
+	return reg.str();
+}
+
+
 int CodeBuffer::emit(const string &s) {
     buffer.push_back(s);
 	return buffer.size() - 1;
