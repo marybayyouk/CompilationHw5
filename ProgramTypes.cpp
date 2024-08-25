@@ -152,12 +152,15 @@ Expression::Expression(Node* terminalExp) {
         output::errorUndef(yylineno, terminalExp->getValue());
         exit(0);
     }
+    terminalExp->setReg(buffer.freshReg());
     setValue(terminalExp->getValue());
     setType(stackTable.findSymbol(terminalExp->getValue())->getType());
-
     int offset = stackTable.findSymbol(terminalExp->getValue())->getOffset();
     string ptr = stackTable.getScope()->getBaseReg();
-    string reg = codeGenerator.generateLoad(offset, ptr, terminalExp->getType());
+    //buffer.emit("-------------------------***************------------------------------");
+
+    string reg = codeGenerator.generateLoad(offset, ptr, terminalExp->getType());    
+    //buffer.emit("-------------------------***************------------------------------");
     setReg(reg); 
 
     if (this->getType() == "bool") {
@@ -457,15 +460,15 @@ Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need t
         string boolFalseL = buffer.freshLabel();
         string boolEndL = buffer.freshLabel(); 
         //emit true label
-        //codeGenerator.defineLable(boolTrueL);  
-        codeGenerator.generateUncondBranch(boolEndL);
-        //emit false label
-        codeGenerator.defineLable(boolFalseL); 
-        codeGenerator.generateUncondBranch(boolEndL);
-        //emit end label
-        codeGenerator.defineLable(boolEndL); 
-        //now hanndle the fucking phi
-        buffer.emit(boolReg + " = phi i32 [ 1, %" + boolTrueL + " ], [ 0, %" + boolFalseL + " ]");
+        // codeGenerator.defineLable(boolTrueL);  
+        // codeGenerator.generateUncondBranch(boolEndL);
+        // //emit false label
+        // codeGenerator.defineLable(boolFalseL); 
+        // codeGenerator.generateUncondBranch(boolEndL);
+        // //emit end label
+        // codeGenerator.defineLable(boolEndL); 
+        // //now hanndle the fucking phi
+        // buffer.emit(boolReg + " = phi i32 [ 1, %" + boolTrueL + " ], [ 0, %" + boolFalseL + " ]");
         this->setReg(boolReg);
     }
     if (exp->getType() == "int") { 
@@ -514,15 +517,15 @@ Statement::Statement(Node * id, Expression * exp) { //maybe i need to check if t
         string boolFalseL = exp->getFalseLabel();
         string boolEndL = buffer.freshLabel(); 
         //emit true label
-        codeGenerator.defineLable(boolTrueL);  
-        codeGenerator.generateUncondBranch(boolEndL);
+        //codeGenerator.defineLable(boolTrueL);  
+        //codeGenerator.generateUncondBranch(boolEndL);
         //emit false label
-        codeGenerator.defineLable(boolFalseL); 
-        codeGenerator.generateUncondBranch(boolEndL);
+        //codeGenerator.defineLable(boolFalseL); 
+        //codeGenerator.generateUncondBranch(boolEndL);
         //emit end label
-        codeGenerator.defineLable(boolEndL); 
+        //codeGenerator.defineLable(boolEndL); 
         //now hanndle the fucking phi
-        buffer.emit(boolReg + " = phi i32 [ 1, %" + boolTrueL + " ], [ 0, %" + boolFalseL + " ]");
+       // buffer.emit(boolReg + " = phi i32 [ 1, %" + boolTrueL + " ], [ 0, %" + boolFalseL + " ]");
         this->setReg(boolReg);
     }
     if (exp->getType() == "int") { 
@@ -553,13 +556,19 @@ Statement::Statement(const string cond, BooleanExpression* boolexp) {
         codeGenerator.generateUncondBranch(stackTable.findInnermostLoopScope()->getEntryLabel());
     }
     else if (cond == "IF") {
+        buffer.emit("-------------------------------IF-------------------------------");
         codeGenerator.generateUncondBranch(boolexp->getFalseLabel());
         codeGenerator.defineLable(boolexp->getTrueLabel());
+        buffer.emit("-----------------------------------------------------------------");
+
     }
     else { //IF-ELSE
+        buffer.emit("-------------------------------ELSE-----------------------------");
         codeGenerator.generateUncondBranch(stackTable.getScope()->getEntryLabel());
         codeGenerator.defineLable(boolexp->getTrueLabel());
         codeGenerator.defineLable(getNextLabel()); //Statement Next Label
+        buffer.emit("-----------------------------------------------------------------");
+
     }
 }
  Program::Program() {

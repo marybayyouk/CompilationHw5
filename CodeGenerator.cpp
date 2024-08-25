@@ -125,11 +125,11 @@ void CodeGenerator::generateStore(int offset, const string& valueReg, const stri
 }
 
 void CodeGenerator::generateCondBranch(const string& condReg, const string& trueLabel, const string& falseLabel) {
-    buffer.emit("br i1 " + condReg + ", label " + trueLabel + ", label " + falseLabel);
+    buffer.emit("br i1 " + condReg + ", label %" + trueLabel + ", label %" + falseLabel);
 }   
 
 void CodeGenerator::generateUncondBranch(const string& label) { //takeen 
-    buffer.emit("br label " + label);
+    buffer.emit("br label %" + label);
 }
 
 // Break and Continue

@@ -24,8 +24,8 @@ public:
     std::string getValue() const { return value; }
     std::string getType() const { return type; }
     string getReg() const { return reg; }   
-    string getTrueLabel() const { string trL = "value: " + value + " ; trueLabel: " + trueLabel; return trL; }
-    string getFalseLabel() const { string trL = "value: " + value + " ; falseLabel: " + falseLabel; return trL; }
+    string getTrueLabel() const { return trueLabel;}
+    string getFalseLabel() const { return falseLabel; }
     void setTrueLabel(std::string label) { trueLabel = label; }
     void setFalseLabel(std::string label) { falseLabel = label; }
     void setValue(std::string value) { this->value = value; }
@@ -83,8 +83,8 @@ public:
     ~BooleanExpression() = default;
     // string getTrueLabel() const { return trueLabel; }
     // string getFalseLabel() const { return falseLabel; }
-    string getTrueLabel() const { string trL = "value: " + getValue()  + " ; trueLabel: " + trueLabel; return trL; }
-    string getFalseLabel() const { string trL = "value: " + getValue() + " ; falseLabel: " + falseLabel; return trL; }
+    string getTrueLabel() const { return trueLabel; }
+    string getFalseLabel() const { return falseLabel; }
     //string getNextLabel() const { string trL = "value: " + getValue() + " ; nextLabel: " + nextLabel; return trL; }
 
     void setTrueLabel(std::string label) { trueLabel = label;} 
