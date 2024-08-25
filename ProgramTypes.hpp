@@ -16,12 +16,18 @@ class Node {
     string reg;
     string value;
     string type;
+    string trueLabel;
+    string falseLabel;
 public:
     Node(string val = "", string type = "" , string reg = "" ) : value(val), type(type), reg(reg) {};
     virtual ~Node() {};
     std::string getValue() const { return value; }
     std::string getType() const { return type; }
     string getReg() const { return reg; }   
+    string getTrueLabel() const { return trueLabel; }
+    string getFalseLabel() const { return falseLabel; }
+    void setTrueLabel(std::string label) { trueLabel = label; }
+    void setFalseLabel(std::string label) { falseLabel = label; }
     void setValue(std::string value) { this->value = value; }
     void setType(std::string type) { this->type = type; }
     void setReg(std::string reg) { this->reg = reg; }
@@ -53,8 +59,6 @@ public:
     void setNextLabel(std::string label) { nextLabel = label; }
 };
 
-
-
 class Expression : public Node {    
     //bool isFunction;
 public:
@@ -71,11 +75,9 @@ class BooleanExpression : public Expression {
     string trueLabel;// target label for a jump when condition B evaluates to true
     string falseLabel; //target label for a jump when condition B evaluates to false
 public:
-    BooleanExpression() : Expression("", "bool", freshReg()) {};
     BooleanExpression(Call* call); // Exp -> Call
     BooleanExpression(Node* exp); // Exp -> LPAREN Exp RPAREN
     BooleanExpression(Node* leftExp, Node* rightExp, const string op); // Exp -> Exp RELOP/AND/OR Exp
-
     BooleanExpression(Node* boolexp, const string op); // Exp -> NOT Exp
     ~BooleanExpression() = default;
     string getTrueLabel() const { return trueLabel; }
@@ -83,34 +85,15 @@ public:
     void setTrueLabel(std::string label) { trueLabel = label;} 
     void setFalseLabel(std::string label) { falseLabel = label; }
 };
-class Bool : public BooleanExpression { //takeen
-public:
-    Bool(Node* exp, string trueFalse) {  // Exp -> True / False
-        BooleanExpression* boolExp = new BooleanExpression();
-        boolExp->setReg(exp->getReg());
-        this->setValue(trueFalse);
-        this->setType("bool");
-        this->setReg(freshReg());
-        string newTrueL = CodeBuffer::instance().freshLabel();
-        string newFalseL = CodeBuffer::instance().freshLabel();
-        boolExp->setTrueLabel(newTrueL);
-        boolExp->setFalseLabel(newFalseL);
 
-        if (trueFalse == "true") { 
-            CodeBuffer::instance().emit("br label %" + newTrueL);
-        } else { 
-            CodeBuffer::instance().emit("br label %" + newFalseL);
-        }
-    }
+class Bool : public Node { 
+public:
+    Bool(Node* exp, string trueFalse);
 };
 
 class Num : public Expression { //takeen
 public:
-    Num(Node* exp) : Expression() { //Exp -> NUM
-        setValue(exp->getValue());
-        setType("int");
-        CodeBuffer::instance().emit(exp->getReg() + " = add i32" + exp->getValue() + " , 0");
-    };
+    Num(Node* exp); // Exp -> NUM
 };
 
 class NumB : public Expression { //takeen
@@ -120,16 +103,7 @@ public:
 
 class String : public Expression { //takeen
 public:
-    String(Node* exp) : Expression() { //Exp -> STRING
-        setValue(exp->getValue());
-        setType("string");
-        string global = freshGlobalReg();
-        string local = freshReg();
-        CodeBuffer::instance().emit(global + " = constant [" + to_string(exp->getValue().size() + 1) + " x i8]" + " c" + exp->getValue() + "\\00\"");
-        CodeBuffer::instance().emit(local + ".ptr = getelementptr[" + to_string(exp->getValue().size() + 1) + " x i8]" 
-                        + ", " + to_string(exp->getValue().size() + 1) + " x i8]*  " + global + ", i32 0, i32 0");
-        setReg(local);   
-    }
+    String(Node* exp); // Exp -> STRING
 };
 
 class Statement : public Node {

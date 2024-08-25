@@ -116,8 +116,6 @@ void CodeGenerator::generateGlobalVar(const string& name, const string& type) {
 }
 
 void CodeGenerator::generateStore(int offset, const string& valueReg, const string& ptr) { //Takeen
-    // if (offset < 0)
-    //     return;
     string stackReg = freshReg();
     //get the address of the stack
     buffer.emit(stackReg + " = getelementptr i32, i32* " + ptr + ", i32 " + to_string(offset));

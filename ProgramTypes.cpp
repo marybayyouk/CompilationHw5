@@ -52,52 +52,44 @@ void beginingLoopMarker(string beginLabel) {
 
 ///////////////////////////////////////BooleanExpression///////////////////////////////////////
 
-// Expression -> NOT Expression
-BooleanExpression::BooleanExpression(Node* boolexp, const string op) { //takeen
-    BooleanExpression* exp = new BooleanExpression();
-    exp->setReg(boolexp->getReg());
-    if (exp->getType() != "bool") {
+// Expression -> NOT Expression //regFixed
+BooleanExpression::BooleanExpression(Node* boolExp, const string op) { 
+    setReg(boolExp->getReg());
+    if (boolExp->getType() != "bool") {
         output::errorMismatch(yylineno);
         exit(0);
     }
-    if (!stackTable.isDefinedInProgram(exp->getValue())) {
-        output::errorUndef(yylineno, exp->getValue());
+    if (!stackTable.isDefinedInProgram(boolExp->getValue())) {
+        output::errorUndef(yylineno, boolExp->getValue());
         exit(0);
     }
-    BooleanExpression* boolExp = new BooleanExpression(exp);
-    if (exp->getValue() == "true") {
-        boolExp->setValue("false");
-    } else {
-        boolExp->setValue("true");
-    }
-    boolExp->setType("bool");
-    string tempTrueL = exp->getTrueLabel();
-    boolExp->setTrueLabel(exp->getFalseLabel());
-    boolExp->setFalseLabel(tempTrueL);
+    string temp = boolExp->getFalseLabel();
+    boolExp->setFalseLabel(boolExp->getTrueLabel());
+    boolExp->setTrueLabel(temp);
 }
 
-// BooleanExpression -> Exp RELOP/AND/OR Exp
-BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, const string op) {  //takeen
-    BooleanExpression* left = dynamic_cast<BooleanExpression *> (leftExp);
-    BooleanExpression* right = dynamic_cast<BooleanExpression *> (rightExp);
-    string lType = left->getType();
-    string rType = right->getType();
+// BooleanExpression -> Exp RELOP/AND/OR Exp //regFixed
+BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, const string op) { 
+    string lType = leftExp->getType();
+    string rType = rightExp->getType();
 
-    if (op == "OR" || op == "AND") { //takeen
+    if (op == "OR" || op == "AND") {  
         if (lType != "bool" || rType != "bool") {
             output::errorMismatch(yylineno);
             exit(0);
         }
-        setTrueLabel(right->getTrueLabel());
-        setFalseLabel(right->getFalseLabel());
+        setTrueLabel(rightExp->getTrueLabel());
+        setFalseLabel(rightExp->getFalseLabel());
         setType("bool");
+        // setTrueLabel(leftExp->getTrueLabel());
+
         if(op == "OR") {
-            buffer.emit(left->getTrueLabel() + ":");
-            buffer.emit("br label %" + right->getTrueLabel());
+            codeGenerator.defineLable(leftExp->getTrueLabel()); //before i defined Lexp->true
+            codeGenerator.generateUncondBranch(rightExp->getTrueLabel()); //rightExp->true
         }
         else {
-            buffer.emit(left->getFalseLabel() + ":");
-            buffer.emit("br label %" + right->getFalseLabel());
+            codeGenerator.defineLable(leftExp->getFalseLabel());
+            codeGenerator.generateUncondBranch(rightExp->getFalseLabel());
         }
     }
     else { //RELOP
@@ -112,32 +104,29 @@ BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, const string
         setTrueLabel(buffer.freshLabel());
         setFalseLabel(buffer.freshLabel()); 
         string oper = getRelopOp(op);
-        string rightReg = emitTruncation(right->getReg(), lType, rType, true);
-        string leftReg = emitTruncation(left->getReg(), lType, lType, true);    
-        buffer.emit("br i1 " + reg + ", label %" + getTrueLabel() + ", label %" + getFalseLabel());
+        string rightReg = emitTruncation(rightExp->getReg(), lType, rType, true);
+        string leftReg = emitTruncation(leftExp->getReg(), lType, lType, true);    
+        codeGenerator.generateCondBranch(reg, getTrueLabel(), getFalseLabel());
     }
 }
 
-// Exp -> LParen Exp RParen
-BooleanExpression::BooleanExpression(Node *exp) { 
+// Exp -> LParen Exp RParen //regFixed
+BooleanExpression::BooleanExpression(Node* exp) {  
     if(exp->getType() == "bool") {
-        BooleanExpression* boolExp = new BooleanExpression();
-        boolExp->setReg(exp->getReg());
+        setReg(exp->getReg());
         setType("bool");
-        setValue(boolExp->getValue());
-        setTrueLabel(boolExp->getTrueLabel());
-        setFalseLabel(boolExp->getFalseLabel());
-        setReg(boolExp->getReg());
-    }
-    else {
+        setValue(exp->getValue());
+        setTrueLabel(exp->getTrueLabel());
+        setFalseLabel(exp->getFalseLabel());
+    } else {
         // initialize the expression with the value of the expression - regular expression -
         setValue(exp->getValue());
-        setType("");
+        setType(exp->getType());
         setReg(exp->getReg());
     }
 }
 
-// EXP -> Call 
+// EXP -> Call //not sure
 BooleanExpression::BooleanExpression(Call* call) {
     setValue(call->getValue());
     setType(stackTable.findSymbol(call->getValue())->getType());
@@ -148,8 +137,8 @@ BooleanExpression::BooleanExpression(Call* call) {
 
 //////////////////////////////////////////Expression///////////////////////////////////////////
 
-// EXP -> ID 
-Expression::Expression(Node* terminalExp) {  //takeen
+// EXP -> ID //regFixed
+Expression::Expression(Node* terminalExp) {  
     if (!stackTable.isDefinedInProgram(terminalExp->getValue())){
         output::errorUndef(yylineno, terminalExp->getValue());
         exit(0);
@@ -158,29 +147,23 @@ Expression::Expression(Node* terminalExp) {  //takeen
     setType(stackTable.findSymbol(terminalExp->getValue())->getType());
 
     int offset = stackTable.findSymbol(terminalExp->getValue())->getOffset();
-    string ptr = freshReg();
+    string ptr = stackTable.getScope()->getBaseReg();
     string reg = codeGenerator.generateLoad(offset, ptr, terminalExp->getType());
     setReg(reg); 
 
     if (this->getType() == "bool") {
-        BooleanExpression* boolExp = new BooleanExpression(this);
         string newReg = freshReg();
         string newTrueL = buffer.freshLabel();
         string newFalseL = buffer.freshLabel();
-        buffer.emit(newReg + " = icmp ne i32 1, " + boolExp->getReg());
-        buffer.emit("br i1 " + reg + ", label %" + newTrueL + ", label %" + newFalseL);
-        boolExp->setTrueLabel(newTrueL);
-        boolExp->setFalseLabel(newFalseL);
-    }
-    if (this->getType() == "byte") {
-        string newReg = emitTruncation(reg, "byte", "int", false);
-        setReg(newReg);
+        buffer.emit(newReg + " = icmp ne i32 1, " + terminalExp->getReg());
+        codeGenerator.generateCondBranch(newReg, newTrueL, newFalseL);
+        setTrueLabel(newTrueL);
+        setFalseLabel(newFalseL);
     }
 }
 
-// Exp -> LPAREN Type RPAREN Exp 
-Expression::Expression(Type* type, Node* exp) { // takeen
-    Expression* e = dynamic_cast<Expression *> (exp);
+// Exp -> LPAREN Type RPAREN Exp //regFixed
+Expression::Expression(Type* type, Node* exp) { 
     if((exp->getType() != "int" && exp->getType() != "byte") || (type->getType() != "int" && type->getType() != "byte")){
         output::errorMismatch(yylineno);
         exit(0);
@@ -192,64 +175,114 @@ Expression::Expression(Type* type, Node* exp) { // takeen
     setReg(reg);
 }
 
-// Exp -> Exp Binop Exp
+// Exp -> Exp Binop Exp //regFixed
 Expression::Expression(Node* leftExp, Node* rightExp, const string op) { 
     Expression* left = dynamic_cast<Expression *> (leftExp);
     Expression* right = dynamic_cast<Expression *> (rightExp);
     string lType = left->getType();
     string rType = right->getType();
+
     if ((lType != "int" && lType != "byte") || (rType != "int" && rType != "byte")) {
             output::errorMismatch(yylineno);
             exit(0);
         }
-    ///SET TYPE FOR BINOP 
+    //get Binop operation
     this->setReg(freshReg()); 
-    if(op == "DIV") { 
+    string operation = getBinopOp(op);
+    if (operation == "DIV") { 
         buffer.emit("call void @check_division_by_zero(i32 " + right->getReg() + ")");
-        if(this->getType() == "int")
+        if (this->getType() == "int") {
             this->setType("sdiv");
-        else
-            this->setType("udiv");
+            operation = "sdiv";
+        } else {
+            this->setType("udiv"); //for byte division
+            operation = "udiv";
+        }
     }
+
     if (lType == "byte" && rType == "byte") {  //BYTE op BYTE
         setType("byte");
-        buffer.emit(this->getReg() + " = " + op + " i8 " + left->getReg() + ", " + right->getReg());        
+        buffer.emit(this->getReg() + " = " + operation + " i8 " + left->getReg() + ", " + right->getReg());        
     }
     else if (lType == "byte" && rType == "int") { //BYTE op INT
         setType("int");
-        buffer.emit(this->getReg() + " = " + op + " i32 " + left->getReg() + ", " + right->getReg());      
+        buffer.emit(this->getReg() + " = " + operation + " i32 " + left->getReg() + ", " + right->getReg());      
     }
     else if (lType == "int" && rType == "byte") { //INT op BYTE
         setType("int");
-        buffer.emit(this->getReg() + " = " + op + " i32 " + left->getReg() + ", " + right->getReg());
+        buffer.emit(this->getReg() + " = " + operation + " i32 " + left->getReg() + ", " + right->getReg());
     }
     else { //INT op INT
         setType("int");
-        buffer.emit(this->getReg() + " = " + op + " i32 " + left->getReg() + ", " + right->getReg());
+        buffer.emit(this->getReg() + " = " + operation + " i32 " + left->getReg() + ", " + right->getReg());
     }
 }
 
-////////////////////////////////////////NumB////////////////////////////////////////////////////
 
-NumB::NumB(Node* expression) : Expression() { //takeen
+//////////////////////////////////////////Bool//////////////////////////////////////////
+//Bool -> TRUE //regFixed
+Bool::Bool(Node* exp, string trueFalse) {  // Exp -> True / False
+    //create new labels for the true and false branches
+    string newTrueL = CodeBuffer::instance().freshLabel();
+    string newFalseL = CodeBuffer::instance().freshLabel();
+    exp->setTrueLabel(newTrueL);
+    exp->setFalseLabel(newFalseL);
+
+    //emit the branch instruction
+    if (trueFalse == "true") { 
+        CodeBuffer::instance().emit("br label %" + newTrueL);
+    } else { 
+        CodeBuffer::instance().emit("br label %" + newFalseL);
+    }
+}
+
+//////////////////////////////////////////Num////////////////////////////////////////////////////
+//Exp -> NUM // regFixed
+Num::Num(Node* exp) : Expression() { //Exp -> NUM
+    setValue(exp->getValue());
+    setType("int");
+    setReg(freshReg());
+    exp->setReg(getReg());
+    CodeBuffer::instance().emit(this->getReg() + " = add i32" + exp->getValue() + " , 0");
+};
+
+
+////////////////////////////////////////NumB////////////////////////////////////////////////////
+//Exp -> NUMB // regFixed
+NumB::NumB(Node* expression) : Expression() { 
     setValue(expression->getValue());
     setType("byte");
-    if (stoi(expression->getValue()) >= 256 || stoi(expression->getValue()) < 0) {
+    if (stoi(expression->getValue()) >= 256) {
         output::errorByteTooLarge(yylineno, expression->getValue());
         exit(0);
     }
-    buffer.emit(expression->getReg() + " = add i8" + expression->getValue() + " , 0");
+    setReg(freshReg());
+    buffer.emit(getReg() + " = add i8" + expression->getValue() + " , 0");
+    expression->setReg(getReg());   
+}
+
+//////////////////////////////////////////String//////////////////////////////////////////
+//Exp -> STRING // regFixed
+String::String(Node* exp) : Expression() { //Exp -> STRING
+    setValue(exp->getValue());
+    setType("string");
+    string global = freshGlobalReg();
+    string local = freshReg();
+    CodeBuffer::instance().emit(global + " = constant [" + to_string(exp->getValue().size() + 1) + " x i8]" + " c" + exp->getValue() + "\\00\"");
+    CodeBuffer::instance().emit(local + ".ptr = getelementptr[" + to_string(exp->getValue().size() + 1) + " x i8]" 
+                    + ", " + to_string(exp->getValue().size() + 1) + " x i8]*  " + global + ", i32 0, i32 0");
+    setReg(local);   
+    exp->setReg(local);
 }
 
 //////////////////////////////////////////Call//////////////////////////////////////////
 
-// Call -> ID LPAREN Exp RPAREN 
+// Call -> ID LPAREN Exp RPAREN  // regFixed
 Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "", "") { 
     if (!(terminalID->getValue() == "print") && !(terminalID->getValue() == "printi") && !(terminalID->getValue() == "readi")) {
         output::errorUndefFunc(yylineno, terminalID->getValue());
         exit(0);
     }
-
     //PRINT FUNCTION
     if ((terminalID->getValue() == "print")) {
         if (exp->getType() != "string") {
@@ -297,7 +330,7 @@ Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "",
 
 //////////////////////////////////////////Statement//////////////////////////////////////////
 
-// Statement -> BREAK / CONTINUE
+// Statement -> BREAK / CONTINUE  //regFixed
 Statement::Statement(Node* BCNode) : Node(BCNode->getValue(),"") { //takeen
     bool loop=false;
     for(SymbolTable* sym: stackTable.scopes){ 
@@ -324,7 +357,7 @@ Statement::Statement(Node* BCNode) : Node(BCNode->getValue(),"") { //takeen
 // Statement -> Call SC
 Statement::Statement(Call * call) {};
 
-//Statement -> Type ID SC 
+//Statement -> Type ID SC //regFixed
 Statement::Statement(Type* type, Node * id) { //takeen 
     if (stackTable.isDefinedInProgram(id->getValue())) {
         output::errorDef(yylineno, id->getValue());
@@ -333,129 +366,149 @@ Statement::Statement(Type* type, Node * id) { //takeen
     id->setType(type->getType());
     id->setReg(freshReg());
     stackTable.addSymbolToProgram(id->getValue(), false, type->getType(), "");
-
-    Expression* exp = new Expression(freshReg(), "0", "int");
-    buffer.emit(exp->getReg() + " = add i32" + exp->getValue() + ", 0");
-
+    if(type->getType() == "bool") { //name =
+        buffer.emit(id->getReg() + " = add i1" + id->getValue() + ", false");
+        setTrueLabel(id->getTrueLabel());
+        setFalseLabel(id->getFalseLabel());
+    }
+    else if (type->getType() == "byte") {
+        buffer.emit(id->getReg() + " = add i8" + id->getValue() + ", 0");
+    } else {
+        buffer.emit(id->getReg() + " = add i32" + id->getValue() + ", 0");
+    }
+   
     string ptr_reg = freshReg();
     string rbp = stackTable.getScope()->getBaseReg();
     int offset = stackTable.getScope()->getOffset();
-
+    
     //store the value in the stack
     buffer.emit(ptr_reg + " = getelementptr i32, i32* " + rbp + ", i32 " + to_string(offset));
-    buffer.emit("store i32 " + exp->getReg() + ", i32* %" + exp->getReg());
-}
-
-// Statement -> Type ID Assign Exp SC
-Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need to check if the valueExp is legal func but not considered as function
-    if (stackTable.isDefinedInProgram(id->getValue())) {
-        output::errorDef(yylineno, id->getValue());
-        exit(0);
-    }
-    if (!LegalType(type->getType(), exp->getType())) {
-        output::errorMismatch(yylineno);
-        exit(0);
-    }
-    if (type->getType() == "byte" && (stoi(exp->getValue()) > 255 || stoi(exp->getValue()) < 0)) {
-        output::errorByteTooLarge(yylineno, exp->getValue());
-        exit(0);
-    }
-    id->setReg(freshReg());
-    Expression* useless = new Expression();
-    useless->setType(type->getType());
-    useless->setReg(freshReg());
-
-    if (type->getType() == "byte") {
-        string byteReg = freshReg();
-        buffer.emit(byteReg + " = zext i8 " + exp->getReg() + " to i32");
-        useless->setReg(byteReg);
-    }
+    buffer.emit("store i32 " + id->getReg() + ", i32* %" + id->getReg());
     if (type->getType() == "bool") {
-        BooleanExpression* boolExp = new BooleanExpression(exp);
-        string boolTrueL = boolExp->getTrueLabel();
-        string boolFalseL = boolExp->getFalseLabel();
-        string boolEndL = buffer.freshLabel(); 
-        codeGenerator.defineLable(boolTrueL);  //emit true label
-        codeGenerator.generateUncondBranch(boolEndL);
+        string endLabel = buffer.freshLabel();
+        string trueLabel = buffer.freshLabel();
+        string falseLabel = buffer.freshLabel();
 
-        codeGenerator.defineLable(boolFalseL); //emit false label
-        codeGenerator.generateUncondBranch(boolEndL);
+        //emit the branch instruction
+        codeGenerator.generateUncondBranch(trueLabel); 
+        codeGenerator.generateUncondBranch(falseLabel);
+        codeGenerator.defineLable(trueLabel);
+        codeGenerator.generateUncondBranch(endLabel);
 
-        codeGenerator.defineLable(boolEndL); //emit end label
-        //now hanndle the fucking phi
-        buffer.emit(useless->getReg() + " = phi i32 [ 1, %" + boolTrueL + " ], [ 0, %" + boolFalseL + " ]");
-    }
-    if ((type->getType() == "int") && (exp->getType() == "byte")) {
-        string intByte = freshReg();
-        buffer.emit(intByte + " = zext i8 " + exp->getReg() + " to i32");
-        useless->setReg(intByte);
-    }
-    else { //type=int && expType = byte
-        useless->setReg(exp->getReg());
-    }
+        codeGenerator.defineLable(falseLabel);
+        codeGenerator.generateUncondBranch(endLabel);
 
-    stackTable.addSymbolToProgram(id->getValue(), false, type->getType(), "");
-    id->setType(type->getType());
-    codeGenerator.generateStore(stackTable.findSymbol(id->getValue())->getOffset(), exp->getReg(), type->getType());
-    delete useless;
+        codeGenerator.defineLable(endLabel);
+    }
 }
 
-// Statement -> ID Assign Exp SC
-Statement::Statement(Node * id, Expression * exp) { //maybe i need to check if the valueExp is legal func but not considered as function
- if (!stackTable.isDefinedInProgram(id->getValue())) {
+// Statement -> Type ID Assign Exp SC //regFixed
+Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need to check if the valueExp is legal func but not considered as function
+     if (!stackTable.isDefinedInProgram(id->getValue())) {
         output::errorUndef(yylineno, id->getValue());
-        exit(0);
+        exit(0); 
     }
+    // check idType == expType
     if (!LegalType((stackTable.findSymbol(id->getValue()))->getType(), exp->getType())) {
         output::errorMismatch(yylineno);
         exit(0);
     }
+    // check if id == illegal byte value
     if (id->getType() == "byte" && (stoi(exp->getValue()) > 255 || stoi(exp->getValue()) < 0)) {
         output::errorByteTooLarge(yylineno, exp->getValue());
         exit(0);
     }
-    Type* type = new Type(exp->getType());
+    //function without args case: print; | printi; | readi;
+    // if( (exp->getType() == "printi" || "readi" || "readi") && ) { /// i need to hanle this case later 
+    //     output::errorPrototypeMismatch(yylineno, exp->getValue(), "int");
+    //     exit(0);
+    // }
 
-    id->setReg(freshReg());
-    Expression* useless = new Expression();
-    useless->setType(type->getType());
-    useless->setReg(freshReg());
-
-    if (type->getType() == "byte") {
+    if (exp->getType() == "byte") {
         string byteReg = freshReg();
         buffer.emit(byteReg + " = zext i8 " + exp->getReg() + " to i32");
-        useless->setReg(byteReg);
+        this->setReg(byteReg);
     }
-    if (type->getType() == "bool") {
-        BooleanExpression* boolExp = new BooleanExpression(exp);
-        string boolTrueL = boolExp->getTrueLabel();
-        string boolFalseL = boolExp->getFalseLabel();
+    if (exp->getType() == "bool") {
+        string boolReg = freshReg();
+        string boolTrueL = exp->getTrueLabel();
+        string boolFalseL = exp->getFalseLabel();
         string boolEndL = buffer.freshLabel(); 
-        codeGenerator.defineLable(boolTrueL);  //emit true label
+        //emit true label
+        codeGenerator.defineLable(boolTrueL);  
         codeGenerator.generateUncondBranch(boolEndL);
-
-        codeGenerator.defineLable(boolFalseL); //emit false label
+        //emit false label
+        codeGenerator.defineLable(boolFalseL); 
         codeGenerator.generateUncondBranch(boolEndL);
-
-        codeGenerator.defineLable(boolEndL); //emit end label
+        //emit end label
+        codeGenerator.defineLable(boolEndL); 
         //now hanndle the fucking phi
-        buffer.emit(useless->getReg() + " = phi i32 [ 1, %" + boolTrueL + " ], [ 0, %" + boolFalseL + " ]");
+        buffer.emit(boolReg + " = phi i32 [ 1, %" + boolTrueL + " ], [ 0, %" + boolFalseL + " ]");
+        this->setReg(boolReg);
     }
-    if ((type->getType() == "int") && (exp->getType() == "byte")) {
-        string intByte = freshReg();
-        buffer.emit(intByte + " = zext i8 " + exp->getReg() + " to i32");
-        useless->setReg(intByte);
-    }
-    else { //type=int && expType = byte
-        useless->setReg(exp->getReg());
+    if (exp->getType() == "int") { 
+
+        this->setReg(exp->getReg());
     }
 
-    stackTable.addSymbolToProgram(id->getValue(), false, type->getType(), "");
-    id->setType(type->getType());
-    codeGenerator.generateStore(stackTable.findSymbol(id->getValue())->getOffset(), exp->getReg(), type->getType());
-    delete useless;
+    stackTable.addSymbolToProgram(id->getValue(), false, exp->getType(), "");
+    id->setType(exp->getType());
+    codeGenerator.generateStore((stackTable.findSymbol(id->getValue()))->getOffset(), this->getReg(), (stackTable.getScope())->getBaseReg());
 }
 
+// Statement -> ID Assign Exp SC //regFixed
+Statement::Statement(Node * id, Expression * exp) { //maybe i need to check if the valueExp is legal func but not considered as function
+    if (!stackTable.isDefinedInProgram(id->getValue())) {
+        output::errorUndef(yylineno, id->getValue());
+        exit(0); 
+    }
+    // check idType == expType
+    if (!LegalType((stackTable.findSymbol(id->getValue()))->getType(), exp->getType())) {
+        output::errorMismatch(yylineno);
+        exit(0);
+    }
+    // check if id == illegal byte value
+    if (id->getType() == "byte" && (stoi(exp->getValue()) > 255 || stoi(exp->getValue()) < 0)) {
+        output::errorByteTooLarge(yylineno, exp->getValue());
+        exit(0);
+    }
+    //function without args case: print; | printi; | readi;
+    // if( (exp->getType() == "printi" || "readi" || "readi") && ) { /// i need to hanle this case later 
+    //     output::errorPrototypeMismatch(yylineno, exp->getValue(), "int");
+    //     exit(0);
+    // }
+
+    if (exp->getType() == "byte") {
+        string byteReg = freshReg();
+        buffer.emit(byteReg + " = zext i8 " + exp->getReg() + " to i32");
+        this->setReg(byteReg);
+    }
+    if (exp->getType() == "bool") {
+        string boolReg = freshReg();
+        string boolTrueL = exp->getTrueLabel();
+        string boolFalseL = exp->getFalseLabel();
+        string boolEndL = buffer.freshLabel(); 
+        //emit true label
+        codeGenerator.defineLable(boolTrueL);  
+        codeGenerator.generateUncondBranch(boolEndL);
+        //emit false label
+        codeGenerator.defineLable(boolFalseL); 
+        codeGenerator.generateUncondBranch(boolEndL);
+        //emit end label
+        codeGenerator.defineLable(boolEndL); 
+        //now hanndle the fucking phi
+        buffer.emit(boolReg + " = phi i32 [ 1, %" + boolTrueL + " ], [ 0, %" + boolFalseL + " ]");
+        this->setReg(boolReg);
+    }
+    if (exp->getType() == "int") { 
+
+        this->setReg(exp->getReg());
+    }
+
+    stackTable.addSymbolToProgram(id->getValue(), false, exp->getType(), "");
+    id->setType(exp->getType());
+    codeGenerator.generateStore((stackTable.findSymbol(id->getValue()))->getOffset(), this->getReg(), (stackTable.getScope())->getBaseReg());
+}
 
 // Statement -> IF|IF-ELSE|WHILE LP EXP RP SS 
 Statement::Statement(const string cond, BooleanExpression* boolexp) {
@@ -489,11 +542,7 @@ Statement::Statement(const string cond, BooleanExpression* boolexp) {
     };
     
 // Statement L Statement R 
-Statement::Statement(Statement* Statement) {
-    //open new scope
-    // stackTable.popScope();
-    // codeGenerator.emitProgramEnd();
-}
+Statement::Statement(Statement* Statement) { }
 
 void Statement::afterElse() {
     setNextLabel(buffer.freshLabel());

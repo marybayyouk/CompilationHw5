@@ -24,7 +24,6 @@ bool LegalType(string typeOne, string typeTwo) {
     return false;
 }
 
-
 bool isLegalFunc(string func, bool functionType) {
     if (func == "print" || func == "printi" || func == "readi") {
         if (!functionType) {
@@ -33,7 +32,6 @@ bool isLegalFunc(string func, bool functionType) {
     }
     return true;
 }
-
 
 string TypeToLLVM(string type) {
     if (type == "int") {
@@ -73,7 +71,7 @@ string getRelopOp(string op) {
     return "sge";
 }
 
-string freshReg() {
+string freshReg() { 
     int static currReg = 1;
     return "%" + to_string(currReg++);
 }
@@ -103,7 +101,7 @@ string getCallEmitLine(string funcName, string reg) { //takeen
 string emitTruncation(const string& reg, const string& type1, const string& type2, bool is2Types) { //takeen
     string trunReg = freshReg();
     if(is2Types) {
-        if (type1 == "byte" && type2 == "int") {
+        if (type1 == "byte" && type2 == "int") { 
             buffer.emit(trunReg + " = trunc i32 " + reg + " to i8");
         }
         else if (type1 == "int" && type2 == "byte") {
