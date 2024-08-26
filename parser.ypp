@@ -54,6 +54,7 @@ Statement: LBRACE ADDSCOPE Statements REMOVESCOPE RBRACE                { $$ = n
         
             | IF LPAREN CHECKBOOL RPAREN ADDSCOPE Statement 
               ELSE {                                                        BooleanExpression* boolExp = new BooleanExpression($3);
+                                                                            
                                                                             dynamic_cast<Statement*>($6)->afterElse();}                                                                 
                                                                         {
                                                                             BooleanExpression* boolExpStatment = new BooleanExpression($3);
@@ -141,7 +142,6 @@ IFMARK: Exp                                                             {
 ;
 CHECKBOOL: Exp                                                          {   
                                                                             BooleanExpression* newExpression = new BooleanExpression($1);
-                                                                            codeGenerator.defineLable(newExpression->getTrueLabel());
                                                                             $$=newExpression;
                                                                         }
 ;

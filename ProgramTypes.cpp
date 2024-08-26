@@ -136,8 +136,8 @@ BooleanExpression::BooleanExpression(Node* exp) {
         setReg(exp->getReg());
         setType("bool");
         setValue(exp->getValue());
-        setTrueLabel(exp->getTrueLabel());
-        setFalseLabel(exp->getFalseLabel());
+        setTrueLabel(buffer.freshLabel());
+        setFalseLabel(buffer.freshLabel());
     } else {
         // initialize the expression with the value of the expression - regular expression -
         setValue(exp->getValue());
@@ -573,9 +573,9 @@ Statement::Statement(const string cond, BooleanExpression* boolexp) {
     }
     else { //IF-ELSE
         buffer.emit("-------------------------------ELSE-----------------------------");
+        setNextLabel(buffer.freshLabel());
         codeGenerator.generateUncondBranch(stackTable.getScope()->getEntryLabel());
-        codeGenerator.defineLable(boolexp->getTrueLabel());
-        codeGenerator.defineLable(getNextLabel()); //Statement Next Label
+        codeGenerator.defineLable(getNextLabel());
         buffer.emit("-----------------------------------------------------------------");
 
     }
