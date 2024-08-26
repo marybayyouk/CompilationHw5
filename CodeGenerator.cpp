@@ -98,11 +98,14 @@ string CodeGenerator::generateAlloca() {
 string CodeGenerator::generateLoad(int offset, const string& ptr, string expType) {
     if (offset < 0)
         return "%" + to_string(offset);
+
+    string reg = buffer.freshReg();
     string stackReg = buffer.freshReg();;
     //get the address of the stack
     buffer.emit(stackReg + " = getelementptr i32, i32* " + ptr + ", i32 " + to_string(offset));
-    
-    return emitTruncation(stackReg, expType, " ", false);
+    buffer.emit(reg + " = load i32, i32* " + stackReg);
+
+    return reg;
 }
 
 string CodeGenerator::generateIcmp(const string& op, const string& lhs, const string& rhs) {
@@ -115,7 +118,7 @@ void CodeGenerator::generateGlobalVar(const string& name, const string& type) {
     buffer.emit("@g" + name + " = global i32 0");
 }
 
-void CodeGenerator::generateStore(int offset, const string& valueReg, const string& ptr) { //Takeen
+void CodeGenerator::generateStore(int offset, const string& valueReg, const string& ptr) { 
     string stackReg = buffer.freshReg();;
     //get the address of the stack
     buffer.emit(stackReg + " = getelementptr i32, i32* " + ptr + ", i32 " + to_string(offset));

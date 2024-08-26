@@ -102,22 +102,14 @@ string getCallEmitLine(string funcName, string reg) { //takeen
     return cmd;
 }
 
-string emitTruncation(const string& reg, const string& type1, const string& type2, bool is2Types) { //takeen
+string emitTruncation(const string& reg, const string& type1, bool is2Types) { 
     string trunReg = buffer.freshReg();;
-    if(is2Types) {
-        if (type1 == "byte" && type2 == "int") { 
+    if(is2Types) { //Assign 8-bit value to 32-bit reg
+        buffer.emit(trunReg + " = zext i8 " + reg + " to i32"); //zeoo: zero extension
+    } else {
+        if (type1 == "byte") { //we have only 32-bit reg
             buffer.emit(trunReg + " = trunc i32 " + reg + " to i8");
-        }
-        else if (type1 == "int" && type2 == "byte") {
-            buffer.emit(trunReg + " = zext i8 " + reg + " to i32");
-        }   
-    }
-    else {
-        buffer.emit(trunReg + " = load i32, i32* " + reg);
-        if (type1 == "byte") {
-            buffer.emit(trunReg + " = trunc i32 " + reg + " to i8");
-        }
-        else if (type1 == "BOOL") {
+        } else if (type1 == "BOOL") { //same here
             buffer.emit(trunReg + " = zext i8 " + reg + " to i1");
         }
     }    

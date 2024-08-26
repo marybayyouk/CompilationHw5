@@ -16,5 +16,5 @@ string freshReg(); ///allocate new register
 string freshGlobalReg(); ///allocate new global register
 string allocateLable(const string& prefix); ///allocate new label
 string getCallEmitLine(string funcName, string reg); ///handle call
-string emitTruncation(const string& reg, const string& type1, const string& type2, bool is2Types); ///handle truncation
+string emitTruncation(const string& reg, const string& type1, bool is2Types); ///handle truncation
 

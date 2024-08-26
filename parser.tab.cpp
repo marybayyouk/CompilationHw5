@@ -549,11 +549,11 @@ static const yytype_int8 yytranslate[] =
 static const yytype_uint8 yyrline[] =
 {
        0,    39,    39,    39,    40,    41,    43,    44,    45,    46,
-      48,    50,    52,    56,    60,    55,    68,    75,    76,    78,
-      80,    81,    82,    84,    86,    87,    88,    89,    91,    93,
-      95,    96,    97,    98,    99,   101,   103,   103,   108,   108,
-     113,   114,   115,   116,   117,   118,   120,   125,   130,   135,
-     144
+      48,    50,    52,    56,    58,    55,    66,    73,    74,    76,
+      78,    79,    80,    82,    84,    85,    86,    87,    89,    91,
+      93,    94,    95,    96,    97,    99,   101,   101,   106,   106,
+     111,   112,   113,   114,   115,   116,   118,   123,   128,   133,
+     142
 };
 #endif
 
@@ -1277,260 +1277,259 @@ yyreduce:
 
   case 13: /* $@2: %empty  */
 #line 56 "parser.ypp"
-                   {                                                        dynamic_cast<Statement*>(yyvsp[-1])->afterElse();
-                                                                            BooleanExpression* boolExp = new BooleanExpression(yyvsp[-4]);
-                                                                            buffer.emit(boolExp->getFalseLabel() + ":");}
-#line 1284 "parser.tab.cpp"
+                   {                                                        BooleanExpression* boolExp = new BooleanExpression(yyvsp[-4]);
+                                                                            dynamic_cast<Statement*>(yyvsp[-1])->afterElse();}
+#line 1283 "parser.tab.cpp"
     break;
 
   case 14: /* @3: %empty  */
-#line 60 "parser.ypp"
+#line 58 "parser.ypp"
                                                                         {
                                                                             BooleanExpression* boolExpStatment = new BooleanExpression(yyvsp[-5]);
                                                                             stackTable.popScope();
                                                                             yyval = new Statement("ELF", boolExpStatment);
                                                                              
                                                                         }
-#line 1295 "parser.tab.cpp"
+#line 1294 "parser.tab.cpp"
     break;
 
   case 15: /* Statement: IF LPAREN CHECKBOOL RPAREN ADDSCOPE Statement ELSE $@2 @3 ADDSCOPE Statement REMOVESCOPE  */
-#line 66 "parser.ypp"
+#line 64 "parser.ypp"
                                                                                     {}
-#line 1301 "parser.tab.cpp"
+#line 1300 "parser.tab.cpp"
     break;
 
   case 16: /* Statement: WHILE NEWLOOPSCOPE LPAREN Exp RPAREN  */
-#line 68 "parser.ypp"
+#line 66 "parser.ypp"
                                                                         {    
                                                                             BooleanExpression* exp = dynamic_cast<BooleanExpression*>(yyvsp[-1]);
                                                                             buffer.emit(exp->getTrueLabel() + ":");
                                                                             Statement { yyval = new Statement("WHILE", dynamic_cast<BooleanExpression*>(yyvsp[-2])) };          
                                                                             endingLoopMarker();                                              
                                                                         }
-#line 1312 "parser.tab.cpp"
+#line 1311 "parser.tab.cpp"
     break;
 
   case 17: /* Statement: BREAK SC  */
-#line 75 "parser.ypp"
+#line 73 "parser.ypp"
                                                                         { yyval = new Statement(yyvsp[-1]); }
-#line 1318 "parser.tab.cpp"
+#line 1317 "parser.tab.cpp"
     break;
 
   case 18: /* Statement: CONTINUE SC  */
-#line 76 "parser.ypp"
+#line 74 "parser.ypp"
                                                                         { yyval = new Statement(yyvsp[-1]); }
-#line 1324 "parser.tab.cpp"
+#line 1323 "parser.tab.cpp"
     break;
 
   case 19: /* Call: ID LPAREN Exp RPAREN  */
-#line 78 "parser.ypp"
+#line 76 "parser.ypp"
                                                                         { yyval = new Call(yyvsp[-3], dynamic_cast<Expression*>(yyvsp[-1]));}
-#line 1330 "parser.tab.cpp"
+#line 1329 "parser.tab.cpp"
     break;
 
   case 20: /* Type: INT  */
-#line 80 "parser.ypp"
+#line 78 "parser.ypp"
                                                                         { yyval = new Type("int"); }
-#line 1336 "parser.tab.cpp"
+#line 1335 "parser.tab.cpp"
     break;
 
   case 21: /* Type: BYTE  */
-#line 81 "parser.ypp"
+#line 79 "parser.ypp"
                                                                         { yyval = new Type("byte"); }
-#line 1342 "parser.tab.cpp"
+#line 1341 "parser.tab.cpp"
     break;
 
   case 22: /* Type: BOOL  */
-#line 82 "parser.ypp"
+#line 80 "parser.ypp"
                                                                         { yyval = new Type("bool"); }
-#line 1348 "parser.tab.cpp"
+#line 1347 "parser.tab.cpp"
     break;
 
   case 23: /* Exp: LPAREN Exp RPAREN  */
-#line 84 "parser.ypp"
+#line 82 "parser.ypp"
                                                                         { yyval = new Expression(yyvsp[-1]); }
-#line 1354 "parser.tab.cpp"
+#line 1353 "parser.tab.cpp"
     break;
 
   case 24: /* Exp: Exp ADD Exp  */
-#line 86 "parser.ypp"
+#line 84 "parser.ypp"
                                                                         { yyval = new Expression(yyvsp[-2], yyvsp[0], "ADD"); }
-#line 1360 "parser.tab.cpp"
+#line 1359 "parser.tab.cpp"
     break;
 
   case 25: /* Exp: Exp SUB Exp  */
-#line 87 "parser.ypp"
+#line 85 "parser.ypp"
                                                                         { yyval = new Expression(yyvsp[-2], yyvsp[0], "SUB"); }
-#line 1366 "parser.tab.cpp"
+#line 1365 "parser.tab.cpp"
     break;
 
   case 26: /* Exp: Exp DIVIDE Exp  */
-#line 88 "parser.ypp"
+#line 86 "parser.ypp"
                                                                         { yyval = new Expression(yyvsp[-2], yyvsp[0], "DIV"); }
-#line 1372 "parser.tab.cpp"
+#line 1371 "parser.tab.cpp"
     break;
 
   case 27: /* Exp: Exp MULTIPLY Exp  */
-#line 89 "parser.ypp"
+#line 87 "parser.ypp"
                                                                         { yyval = new Expression(yyvsp[-2], yyvsp[0], "MUL"); }
-#line 1378 "parser.tab.cpp"
+#line 1377 "parser.tab.cpp"
     break;
 
   case 28: /* Exp: ID  */
-#line 91 "parser.ypp"
+#line 89 "parser.ypp"
                                                                         { yyval = new Expression(yyvsp[0]);}
-#line 1384 "parser.tab.cpp"
+#line 1383 "parser.tab.cpp"
     break;
 
   case 29: /* Exp: Call  */
-#line 93 "parser.ypp"
+#line 91 "parser.ypp"
                                                                         { yyval = new BooleanExpression(yyvsp[0]); }
-#line 1390 "parser.tab.cpp"
+#line 1389 "parser.tab.cpp"
     break;
 
   case 30: /* Exp: NUM  */
-#line 95 "parser.ypp"
+#line 93 "parser.ypp"
                                                                         { yyval = new Num(yyvsp[0]); }
-#line 1396 "parser.tab.cpp"
+#line 1395 "parser.tab.cpp"
     break;
 
   case 31: /* Exp: NUM B  */
-#line 96 "parser.ypp"
+#line 94 "parser.ypp"
                                                                         { yyval = new NumB(yyvsp[-1]); }
-#line 1402 "parser.tab.cpp"
+#line 1401 "parser.tab.cpp"
     break;
 
   case 32: /* Exp: STRING  */
-#line 97 "parser.ypp"
+#line 95 "parser.ypp"
                                                                         { yyval = new String(yyvsp[0]); }
-#line 1408 "parser.tab.cpp"
+#line 1407 "parser.tab.cpp"
     break;
 
   case 33: /* Exp: TRUE  */
-#line 98 "parser.ypp"
+#line 96 "parser.ypp"
                                                                         { yyval = new Bool(yyvsp[0], "true"); }
-#line 1414 "parser.tab.cpp"
+#line 1413 "parser.tab.cpp"
     break;
 
   case 34: /* Exp: FALSE  */
-#line 99 "parser.ypp"
+#line 97 "parser.ypp"
                                                                         { yyval = new Bool(yyvsp[0], "false"); }
-#line 1420 "parser.tab.cpp"
+#line 1419 "parser.tab.cpp"
     break;
 
   case 35: /* Exp: NOT Exp  */
-#line 101 "parser.ypp"
+#line 99 "parser.ypp"
                                                                         { yyval = new BooleanExpression(dynamic_cast<Expression*>(yyvsp[0]), "not");}
-#line 1426 "parser.tab.cpp"
+#line 1425 "parser.tab.cpp"
     break;
 
   case 36: /* $@4: %empty  */
-#line 103 "parser.ypp"
+#line 101 "parser.ypp"
                    { buffer.emit(dynamic_cast<BooleanExpression*>(yyvsp[-1])->getTrueLabel() + ":" ); }
-#line 1432 "parser.tab.cpp"
+#line 1431 "parser.tab.cpp"
     break;
 
   case 37: /* Exp: Exp AND $@4 Exp  */
-#line 104 "parser.ypp"
+#line 102 "parser.ypp"
                                                                         { 
                                                                             yyval = new BooleanExpression(yyvsp[-3], yyvsp[0], "AND");
                                                                         }
-#line 1440 "parser.tab.cpp"
+#line 1439 "parser.tab.cpp"
     break;
 
   case 38: /* $@5: %empty  */
-#line 108 "parser.ypp"
+#line 106 "parser.ypp"
                   { buffer.emit(dynamic_cast<BooleanExpression*>(yyvsp[-1])->getFalseLabel() + ":" ); }
-#line 1446 "parser.tab.cpp"
+#line 1445 "parser.tab.cpp"
     break;
 
   case 39: /* Exp: Exp OR $@5 Exp  */
-#line 109 "parser.ypp"
+#line 107 "parser.ypp"
                                                                         { 
                                                                             yyval = new BooleanExpression(yyvsp[-3], yyvsp[0], "OR");
                                                                         }
-#line 1454 "parser.tab.cpp"
+#line 1453 "parser.tab.cpp"
     break;
 
   case 40: /* Exp: Exp EQ Exp  */
-#line 113 "parser.ypp"
+#line 111 "parser.ypp"
                                                                         { yyval = new BooleanExpression(yyvsp[-2], yyvsp[0], "EQ"); }
-#line 1460 "parser.tab.cpp"
+#line 1459 "parser.tab.cpp"
     break;
 
   case 41: /* Exp: Exp NE Exp  */
-#line 114 "parser.ypp"
+#line 112 "parser.ypp"
                                                                         { yyval = new BooleanExpression(yyvsp[-2], yyvsp[0], "NE"); }
-#line 1466 "parser.tab.cpp"
+#line 1465 "parser.tab.cpp"
     break;
 
   case 42: /* Exp: Exp GE Exp  */
-#line 115 "parser.ypp"
+#line 113 "parser.ypp"
                                                                         { yyval = new BooleanExpression(yyvsp[-2], yyvsp[0], "GE"); }
-#line 1472 "parser.tab.cpp"
+#line 1471 "parser.tab.cpp"
     break;
 
   case 43: /* Exp: Exp GT Exp  */
-#line 116 "parser.ypp"
+#line 114 "parser.ypp"
                                                                         { yyval = new BooleanExpression(yyvsp[-2], yyvsp[0], "GT"); }
-#line 1478 "parser.tab.cpp"
+#line 1477 "parser.tab.cpp"
     break;
 
   case 44: /* Exp: Exp LE Exp  */
-#line 117 "parser.ypp"
+#line 115 "parser.ypp"
                                                                         { yyval = new BooleanExpression(yyvsp[-2], yyvsp[0], "LE"); }
-#line 1484 "parser.tab.cpp"
+#line 1483 "parser.tab.cpp"
     break;
 
   case 45: /* Exp: Exp LT Exp  */
-#line 118 "parser.ypp"
+#line 116 "parser.ypp"
                                                                         { yyval = new BooleanExpression(yyvsp[-2], yyvsp[0], "LT"); }
-#line 1490 "parser.tab.cpp"
+#line 1489 "parser.tab.cpp"
     break;
 
   case 46: /* Exp: LPAREN Type RPAREN Exp  */
-#line 120 "parser.ypp"
+#line 118 "parser.ypp"
                                                                         { yyval = new Expression(dynamic_cast<Type*>(yyvsp[-2]), yyvsp[0]);}
-#line 1496 "parser.tab.cpp"
+#line 1495 "parser.tab.cpp"
     break;
 
   case 47: /* NEWLOOPSCOPE: %empty  */
-#line 125 "parser.ypp"
+#line 123 "parser.ypp"
                                                                         {
                                                                             stackTable.pushScope(true);
                                                                         }
-#line 1504 "parser.tab.cpp"
+#line 1503 "parser.tab.cpp"
     break;
 
   case 48: /* ADDSCOPE: %empty  */
-#line 130 "parser.ypp"
+#line 128 "parser.ypp"
                                                                         {
                                                                             stackTable.pushScope(false);
                                                                         }
-#line 1512 "parser.tab.cpp"
+#line 1511 "parser.tab.cpp"
     break;
 
   case 49: /* REMOVESCOPE: %empty  */
-#line 135 "parser.ypp"
+#line 133 "parser.ypp"
                                                                         {
                                                                             stackTable.popScope();
                                                                         }
-#line 1520 "parser.tab.cpp"
+#line 1519 "parser.tab.cpp"
     break;
 
   case 50: /* CHECKBOOL: Exp  */
-#line 144 "parser.ypp"
+#line 142 "parser.ypp"
                                                                         {   
                                                                             BooleanExpression* newExpression = new BooleanExpression(yyvsp[0]);
                                                                             codeGenerator.defineLable(newExpression->getTrueLabel());
                                                                             yyval=newExpression;
                                                                         }
-#line 1530 "parser.tab.cpp"
+#line 1529 "parser.tab.cpp"
     break;
 
 
-#line 1534 "parser.tab.cpp"
+#line 1533 "parser.tab.cpp"
 
       default: break;
     }
@@ -1724,7 +1723,7 @@ yyreturn:
   return yyresult;
 }
 
-#line 150 "parser.ypp"
+#line 148 "parser.ypp"
 
 StackTable stackTable = StackTable();
 CodeGenerator codeGenerator = CodeGenerator();

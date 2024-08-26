@@ -44,19 +44,24 @@ define i32 @main(){
 %r2 = alloca i32, i32 50
 call void @print(i8* %r3);
 "hello"
+Statement -> Type ID Assign Exp SC: start
 %r5 = getelementptr i32, i32* %r1, i32 3
 store i32 %r4, i32* %r5
+Statement -> Type ID Assign Exp SC: end
+Statement -> Type ID Assign Exp SC: start
 %r7 = getelementptr i32, i32* %r1, i32 4
 store i32 %r6, i32* %r7
-%r9 = getelementptr i32, i32* %r1, i32 4
-%r10 = load i32, i32* %r9
+Statement -> Type ID Assign Exp SC: end
+-------------------------***************------------------------------
+%r10 = getelementptr i32, i32* %r1, i32 4
+%r9 = load i32, i32* %r10
+-------------------------***************------------------------------
 %r11 = icmp ne i32 1, %r8
 br i1 %r11, label %label_5, label %label_6
 label_5:
 call void @print(i8* %r12);
 "val is true"
 label_7:
-:
 -------------------------------ELSE-----------------------------
 br label %
 :
@@ -73,10 +78,14 @@ br label %
 -----------------------------------------------------------------
 label_7:
 label_8:
+And started: 
 :
 br label %
+And ended: 
+OR started: 
 :
 br label %
+OR ended: 
 :
 call void @print(i8* %r15);
 "true"

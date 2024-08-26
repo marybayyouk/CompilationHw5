@@ -9,12 +9,12 @@ using namespace std;
 
 
 void generateElfStatements(BooleanExpression* exp, bool isElf) {
-    //buffer.emit("ElfStatement started: ");
+    buffer.emit("ElfStatement started: ");
     if (isElf) 
         buffer.emit("br label %" + exp->getTrueLabel() + "\n" + exp->getTrueLabel() + ":");
     else
         buffer.emit("br label %" + exp->getFalseLabel() + "\n" + exp->getFalseLabel() + ":");    
-    //buffer.emit("ElfStatement ended: ");
+    buffer.emit("ElfStatement ended: ");
 
 }
 
@@ -52,7 +52,6 @@ void beginingLoopMarker(string beginLabel) {
     codeGenerator.defineLable(beginLabel);
 }
 
-
 ///////////////////////////////////////BooleanExpression///////////////////////////////////////
 
 // Expression -> NOT Expression //regFixed
@@ -87,35 +86,47 @@ BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, const string
         // setTrueLabel(leftExp->getTrueLabel());
 
         if(op == "OR") {
-            //buffer.emit("OR started: ");
+            buffer.emit("OR started: ");
             codeGenerator.defineLable(leftExp->getTrueLabel()); //before i defined Lexp->true
             codeGenerator.generateUncondBranch(rightExp->getTrueLabel()); //rightExp->true
-            //buffer.emit("OR ended: ");
+            buffer.emit("OR ended: ");
         }
         else {
-            //buffer.emit("And started: ");
+            buffer.emit("And started: ");
             codeGenerator.defineLable(leftExp->getFalseLabel());
             codeGenerator.generateUncondBranch(rightExp->getFalseLabel());
-            //buffer.emit("And ended: ");
+            buffer.emit("And ended: ");
         }
     }
     else { //RELOP
-        //buffer.emit("Relop started: ");
+        buffer.emit("Relop started: ");
         if ((lType != "int" && lType != "byte") || (rType != "int" && rType != "byte")) {
             output::errorMismatch(yylineno);
             exit(0);
         }
         setType("bool");
-        string reg = buffer.freshReg();;
-        setReg(reg);    
-
         setTrueLabel(buffer.freshLabel());
-        setFalseLabel(buffer.freshLabel()); 
+        setFalseLabel(buffer.freshLabel());
+        setReg(buffer.freshReg());
         string oper = getRelopOp(op);
-        string rightReg = emitTruncation(rightExp->getReg(), lType, rType, true);
-        string leftReg = emitTruncation(leftExp->getReg(), lType, lType, true);    
-        codeGenerator.generateCondBranch(reg, getTrueLabel(), getFalseLabel());
-        //buffer.emit("Relop ended: ");
+
+        if (lType == "byte" && rType == "byte") {  //BYTE op BYTE
+            //setType("byte");
+            buffer.emit(getReg() + " = " + oper + " i8 " + leftExp->getReg() + ", " + rightExp->getReg());        
+        }
+        else if (lType == "byte" && rType == "int") { //BYTE op INT
+            //setType("int"); /// are we sure?!
+            emitTruncation(leftExp->getReg(), "byte", true);       
+        }
+        else if (lType == "int" && rType == "byte") { //INT op BYTE
+            //setType("int");
+            emitTruncation(rightExp->getReg(), "int", true);
+        } else { //INT op INT
+            //setType("int");
+            buffer.emit(getReg() + " = " + oper + " i32 " + leftExp->getReg() + ", " + rightExp->getReg());
+        }
+        codeGenerator.generateCondBranch(getReg(), getTrueLabel(), getFalseLabel());
+        buffer.emit("Relop ended: ");
     }
 }
 
@@ -157,10 +168,10 @@ Expression::Expression(Node* terminalExp) {
     setType(stackTable.findSymbol(terminalExp->getValue())->getType());
     int offset = stackTable.findSymbol(terminalExp->getValue())->getOffset();
     string ptr = stackTable.getScope()->getBaseReg();
-    //buffer.emit("-------------------------***************------------------------------");
+    buffer.emit("-------------------------***************------------------------------");
 
     string reg = codeGenerator.generateLoad(offset, ptr, terminalExp->getType());    
-    //buffer.emit("-------------------------***************------------------------------");
+    buffer.emit("-------------------------***************------------------------------");
     setReg(reg); 
 
     if (this->getType() == "bool") {
@@ -178,17 +189,16 @@ Expression::Expression(Node* terminalExp) {
 
 // Exp -> LPAREN Type RPAREN Exp //regFixed
 Expression::Expression(Type* type, Node* exp) { 
-    buffer.emit( "Exp -> LPAREN Type RPAREN Exp: " );
+    //buffer.emit( "Exp -> LPAREN Type RPAREN Exp: " );
     if((exp->getType() != "int" && exp->getType() != "byte") || (type->getType() != "int" && type->getType() != "byte")){
         output::errorMismatch(yylineno);
         exit(0);
     }
     setType(type->getType());
     setValue(exp->getValue());
-
-    string reg = emitTruncation(exp->getReg(), type->getType(), exp->getType(), true);
+    string reg = emitTruncation(exp->getReg(), type->getType(), true);
     setReg(reg);
-    buffer.emit( "Exp -> LPAREN Type RPAREN Exp: " );
+    //buffer.emit( "Exp -> LPAREN Type RPAREN Exp: " );
 }
 
 // Exp -> Exp Binop Exp //regFixed
@@ -215,20 +225,18 @@ Expression::Expression(Node* leftExp, Node* rightExp, const string op) {
             operation = "udiv";
         }
     }
-
     if (lType == "byte" && rType == "byte") {  //BYTE op BYTE
         setType("byte");
         buffer.emit(this->getReg() + " = " + operation + " i8 " + left->getReg() + ", " + right->getReg());        
     }
     else if (lType == "byte" && rType == "int") { //BYTE op INT
-        setType("int");
-        buffer.emit(this->getReg() + " = " + operation + " i32 " + left->getReg() + ", " + right->getReg());      
+        setType("int"); /// are we sure?!
+        emitTruncation(left->getReg(), "byte", true);       
     }
     else if (lType == "int" && rType == "byte") { //INT op BYTE
         setType("int");
-        buffer.emit(this->getReg() + " = " + operation + " i32 " + left->getReg() + ", " + right->getReg());
-    }
-    else { //INT op INT
+        emitTruncation(right->getReg(), "int", true);
+    } else { //INT op INT
         setType("int");
         buffer.emit(this->getReg() + " = " + operation + " i32 " + left->getReg() + ", " + right->getReg());
     }
@@ -236,7 +244,7 @@ Expression::Expression(Node* leftExp, Node* rightExp, const string op) {
 
 
 //////////////////////////////////////////Bool//////////////////////////////////////////
-//Bool -> TRUE //regFixed
+//Bool -> TRUE | false //regFixed
 Bool::Bool(Node* exp, string trueFalse) {  // Exp -> True / False
     //create new labels for the true and false branches
     string newTrueL = CodeBuffer::instance().freshLabel();
@@ -264,7 +272,6 @@ Num::Num(Node* exp) : Expression() { //Exp -> NUM
     exp->setReg(getReg());
     CodeBuffer::instance().emit(this->getReg() + " = add i32" + exp->getValue() + " , 0");
 };
-
 
 ////////////////////////////////////////NumB////////////////////////////////////////////////////
 //Exp -> NUMB // regFixed
@@ -311,9 +318,10 @@ Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "",
         buffer.emit(getCallEmitLine(terminalID->getValue(), exp->getReg()));
         buffer.emit(exp->getValue());
     }
-
+    
     //PRINTI FUNCTION
     else if (terminalID->getValue() == "printi") {
+        string args = buffer.freshReg();
         string newReg = buffer.freshReg();;
         if (exp->getType() != "byte" && exp->getType() != "int") {
             output::errorPrototypeMismatch(yylineno,terminalID->getValue(), "int");
@@ -322,32 +330,30 @@ Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "",
         if( exp->getType() == "byte") {
             buffer.emit(newReg + " = zext i8 " + exp->getReg() + " to i32");
         }
-        buffer.emit(newReg + " = add i32 " + newReg + ", 0");
+        buffer.emit(args + " = add i32 " + newReg + ", 0");
         buffer.emit(getCallEmitLine(terminalID->getValue(), newReg));
         buffer.emit(exp->getValue());
     }
     //MUST BE READI FUNCTION
     else { 
-        string newReg = buffer.freshReg();;
+        string args = buffer.freshReg();
+        string newReg = buffer.freshReg();
         if(exp->getType() != "byte" && exp->getType() != "int") {
             output::errorPrototypeMismatch(yylineno,terminalID->getValue(), "int");
             exit(0);
         }
         if(exp->getType() == "byte") {
             buffer.emit(newReg + " = zext i8 " + exp->getReg() + " to i32");
-            buffer.emit(newReg + " = add i32 " + newReg + ", 0");
+            buffer.emit(args + " = add i32 " + newReg + ", 0");
         }
         else
             buffer.emit(newReg + " = add i32 " + exp->getReg() + ", 0");
 
-        string reg = buffer.freshReg();;
         setType(stackTable.findSymbol(terminalID->getValue())->getType());
         setValue(stackTable.findSymbol(terminalID->getValue())->getName());
-
-
-        buffer.emit(getCallEmitLine(reg, newReg));
-        setReg(reg);
-        codeGenerator.generateStore(stackTable.findSymbol(terminalID->getValue())->getOffset(), reg, stackTable.getScope()->getBaseReg());
+        buffer.emit(getCallEmitLine(args, newReg));
+        setReg(args);
+        codeGenerator.generateStore(stackTable.findSymbol(terminalID->getValue())->getOffset(), args, stackTable.getScope()->getBaseReg());
     }
 }
 
@@ -403,7 +409,7 @@ Statement::Statement(Type* type, Node * id) { //takeen
     string ptr_reg = buffer.freshReg();;
     string rbp = stackTable.getScope()->getBaseReg();
     int offset = stackTable.getScope()->getOffset();
-    //buffer.emit("here started: ");
+    buffer.emit("here started: ");
     //store the value in the stack
     buffer.emit(ptr_reg + " = getelementptr i32, i32* " + rbp + ", i32 " + to_string(offset));
     buffer.emit("store i32 " + id->getReg() + ", i32* %" + id->getReg());
@@ -413,7 +419,7 @@ Statement::Statement(Type* type, Node * id) { //takeen
         string falseLabel = buffer.freshLabel();
 
         //emit the branch instruction
-        codeGenerator.generateUncondBranch(trueLabel); 
+        codeGenerator.generateUncondBranch(trueLabel);  
         codeGenerator.generateUncondBranch(falseLabel);
         codeGenerator.defineLable(trueLabel);
         codeGenerator.generateUncondBranch(endLabel);
@@ -423,7 +429,7 @@ Statement::Statement(Type* type, Node * id) { //takeen
 
         codeGenerator.defineLable(endLabel);
     }
-    //buffer.emit("here ended: ");
+    buffer.emit("here ended: ");
 }
 
 // Statement -> Type ID Assign Exp SC //regFixed
@@ -447,7 +453,7 @@ Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need t
     //     output::errorPrototypeMismatch(yylineno, exp->getValue(), "int");
     //     exit(0);
     // }
-    //buffer.emit("Statement -> Type ID Assign Exp SC: start");
+    buffer.emit("Statement -> Type ID Assign Exp SC: start");
     //buffer.emit("exp->reg: " + exp->getReg());
     if (exp->getType() == "byte") {
         string byteReg = buffer.freshReg();;
@@ -481,7 +487,7 @@ Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need t
     //buffer.emit("param 2: " + getReg());
     //buffer.emit("param 3: " + (stackTable.getScope())->getBaseReg());
     codeGenerator.generateStore((stackTable.findSymbol(id->getValue()))->getOffset(), this->getReg(), (stackTable.getScope())->getBaseReg());    
-    //buffer.emit("Statement -> Type ID Assign Exp SC: end");
+    buffer.emit("Statement -> Type ID Assign Exp SC: end");
 }
 
 // Statement -> ID Assign Exp SC //regFixed
@@ -492,6 +498,7 @@ Statement::Statement(Node * id, Expression * exp) { //maybe i need to check if t
     }
     // check idType == expType
     if (!LegalType((stackTable.findSymbol(id->getValue()))->getType(), exp->getType())) {
+        //cout << "id assign exp sc" << endl;
         output::errorMismatch(yylineno);
         exit(0);
     }
@@ -513,6 +520,7 @@ Statement::Statement(Node * id, Expression * exp) { //maybe i need to check if t
     }
     if (exp->getType() == "bool") {
         string boolReg = buffer.freshReg();;
+        setReg(boolReg);
         string boolTrueL = exp->getTrueLabel();
         string boolFalseL = exp->getFalseLabel();
         string boolEndL = buffer.freshLabel(); 
@@ -526,7 +534,7 @@ Statement::Statement(Node * id, Expression * exp) { //maybe i need to check if t
         //codeGenerator.defineLable(boolEndL); 
         //now hanndle the fucking phi
        // buffer.emit(boolReg + " = phi i32 [ 1, %" + boolTrueL + " ], [ 0, %" + boolFalseL + " ]");
-        this->setReg(boolReg);
+        
     }
     if (exp->getType() == "int") { 
 
@@ -545,6 +553,7 @@ Statement::Statement(const string cond, BooleanExpression* boolexp) {
         exit(0);
     }
     if (boolexp->getType() != "bool") {
+        //cout << "line 556: " << boolexp->getType() << endl;
         output::errorMismatch(yylineno);
         exit(0);
     }
@@ -580,5 +589,6 @@ Statement::Statement(Statement* Statement) { }
 
 void Statement::afterElse() {
     setNextLabel(buffer.freshLabel());
-    codeGenerator.defineLable(getNextLabel()); //Statement Next Label
+    //codeGenerator.defineLable("fkrk elnext Gay? " + getNextLabel() + "shkloo Next Gay"); //Statement Next Label
+    codeGenerator.defineLable(getNextLabel());
 }
