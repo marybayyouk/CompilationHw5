@@ -13,7 +13,7 @@ class CodeBuffer{
 	std::vector<std::string> buffer;
 	std::vector<std::string> globalDefs;
 	int labels_num = 1;
-	int register_num = 1;
+	int register_num = 0;
 public:
 	CodeBuffer();
 	CodeBuffer(CodeBuffer const&);

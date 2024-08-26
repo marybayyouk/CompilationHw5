@@ -55,7 +55,8 @@ Statement: LBRACE ADDSCOPE Statements REMOVESCOPE RBRACE                { $$ = n
             | IF LPAREN CHECKBOOL RPAREN ADDSCOPE Statement 
               ELSE {                                                        BooleanExpression* boolExp = new BooleanExpression($3);
                                                                             
-                                                                            dynamic_cast<Statement*>($6)->afterElse();}                                                                 
+                                                                            dynamic_cast<Statement*>($6)->afterElse();
+                                                                            buffer.emit(dynamic_cast<BooleanExpression*>($3)->getFalseLabel()+":");}                                                                 
                                                                         {
                                                                             BooleanExpression* boolExpStatment = new BooleanExpression($3);
                                                                             stackTable.popScope();
