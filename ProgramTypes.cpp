@@ -316,7 +316,7 @@ Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "",
             exit(0);
         }
         buffer.emit(getCallEmitLine(terminalID->getValue(), exp->getReg()));
-        buffer.emit(exp->getValue());
+        // buffer.emit(exp->getValue());
     }
     
     //PRINTI FUNCTION
@@ -332,7 +332,7 @@ Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "",
         }
         buffer.emit(args + " = add i32 " + newReg + ", 0");
         buffer.emit(getCallEmitLine(terminalID->getValue(), newReg));
-        buffer.emit(exp->getValue());
+        // buffer.emit(exp->getValue());
     }
     //MUST BE READI FUNCTION
     else { 
