@@ -136,8 +136,8 @@ BooleanExpression::BooleanExpression(Node* exp) {
         setReg(exp->getReg());
         setType("bool");
         setValue(exp->getValue());
-        setTrueLabel(buffer.freshLabel());
-        setFalseLabel(buffer.freshLabel());
+        setTrueLabel(exp->getTrueLabel());
+        setFalseLabel(exp->getFalseLabel());
     } else {
         // initialize the expression with the value of the expression - regular expression -
         setValue(exp->getValue());
@@ -446,11 +446,6 @@ Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need t
         output::errorByteTooLarge(yylineno, exp->getValue());
         exit(0);
     }
-    //function without args case: print; | printi; | readi;
-    // if( (exp->getType() == "printi" || "readi" || "readi") && ) { /// i need to hanle this case later 
-    //     output::errorPrototypeMismatch(yylineno, exp->getValue(), "int");
-    //     exit(0);
-    // }
     //buffer.emit("exp->reg: " + exp->getReg());
     if (exp->getType() == "byte") {
         string byteReg = buffer.freshReg();;
@@ -458,22 +453,27 @@ Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need t
         this->setReg(byteReg);
     }
     if (exp->getType() == "bool") {
-        string boolReg = buffer.freshReg();;
+        string boolReg = buffer.freshReg();
+        setReg(boolReg);
         string boolTrueL = buffer.freshLabel();
         string boolFalseL = buffer.freshLabel();
         string boolEndL = buffer.freshLabel(); 
+        if (exp->getValue() == "true") {
+            codeGenerator.generateUncondBranch(boolTrueL);
+        } else {
+            codeGenerator.generateUncondBranch(boolFalseL);
+        }
         //emit true label
-        // codeGenerator.defineLable(boolTrueL);  
-        // codeGenerator.generateUncondBranch(boolEndL);
-        // //emit false label
-        // codeGenerator.defineLable(boolFalseL); 
-        // codeGenerator.generateUncondBranch(boolEndL);
-        // //emit end label
-        // codeGenerator.defineLable(boolEndL); 
+        codeGenerator.defineLable(boolTrueL);  
+        codeGenerator.generateUncondBranch(boolEndL);
+        //emit false label
+        codeGenerator.defineLable(boolFalseL); 
+        codeGenerator.generateUncondBranch(boolEndL);
+        //emit end label
+        codeGenerator.defineLable(boolEndL); 
         // //now hanndle the fucking phi
-        // buffer.emit(boolReg + " = phi i32 [ 1, %" + boolTrueL + " ], [ 0, %" + boolFalseL + " ]");
-        this->setReg(boolReg);
-        buffer.emit(this->getReg() + " = add i32 " + exp->getReg() + ", 0");
+        buffer.emit(boolReg + " = phi i32 [ 1, %" + boolTrueL + " ], [ 0, %" + boolFalseL + " ]");
+        // buffer.emit(this->getReg() + " = add i32 " + exp->getReg() + ", 0");
     }
     if (exp->getType() == "int") { 
 
@@ -483,8 +483,6 @@ Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need t
 
     stackTable.addSymbolToProgram(id->getValue(), false, exp->getType(), "");
     id->setType(exp->getType());
-    //buffer.emit("param 2: " + getReg());
-    //buffer.emit("param 3: " + (stackTable.getScope())->getBaseReg());
     codeGenerator.generateStore((stackTable.findSymbol(id->getValue()))->getOffset(), this->getReg(), (stackTable.getScope())->getBaseReg());    
 }
 
@@ -522,16 +520,22 @@ Statement::Statement(Node * id, Expression * exp) { //maybe i need to check if t
         string boolTrueL = exp->getTrueLabel();
         string boolFalseL = exp->getFalseLabel();
         string boolEndL = buffer.freshLabel(); 
+       if (exp->getValue() == "true") {
+            codeGenerator.generateUncondBranch(boolTrueL);
+        } else {
+            codeGenerator.generateUncondBranch(boolFalseL);
+        }
         //emit true label
-        //codeGenerator.defineLable(boolTrueL);  
-        //codeGenerator.generateUncondBranch(boolEndL);
+        codeGenerator.defineLable(boolTrueL);  
+        codeGenerator.generateUncondBranch(boolEndL);
         //emit false label
-        //codeGenerator.defineLable(boolFalseL); 
-        //codeGenerator.generateUncondBranch(boolEndL);
+        codeGenerator.defineLable(boolFalseL); 
+        codeGenerator.generateUncondBranch(boolEndL);
         //emit end label
-        //codeGenerator.defineLable(boolEndL); 
-        //now hanndle the fucking phi
-       // buffer.emit(boolReg + " = phi i32 [ 1, %" + boolTrueL + " ], [ 0, %" + boolFalseL + " ]");
+        codeGenerator.defineLable(boolEndL); 
+        // //now hanndle the fucking phi
+        buffer.emit(boolReg + " = phi i32 [ 1, %" + boolTrueL + " ], [ 0, %" + boolFalseL + " ]");
+        // buffer.emit(this->getReg() + " = add i32 " + exp->getReg() + ", 0");
         
     }
     if (exp->getType() == "int") { 
