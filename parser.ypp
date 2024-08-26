@@ -53,17 +53,16 @@ Statement: LBRACE ADDSCOPE Statements REMOVESCOPE RBRACE                { $$ = n
                                                                         { $$ = new Statement("IF", dynamic_cast<BooleanExpression*>($3)); stackTable.popScope();}  
         
             | IF LPAREN CHECKBOOL RPAREN ADDSCOPE Statement 
-              ELSE {                                                        BooleanExpression* boolExp = new BooleanExpression($3);
-                                                                            
-                                                                            dynamic_cast<Statement*>($6)->afterElse();
-                                                                            buffer.emit(dynamic_cast<BooleanExpression*>($3)->getFalseLabel()+":");}                                                                 
+              ELSE                                                      {                                                        
+                                                                            std::string nextLabel = dynamic_cast<Statement*>($6)->afterElse();                                  
+                                                                            buffer.emit(dynamic_cast<BooleanExpression*>($3)->getFalseLabel()+":");} 
+                                                        ADDSCOPE Statement                                                             
                                                                         {
-                                                                            BooleanExpression* boolExpStatment = new BooleanExpression($3);
+                                                                            $$ = new Statement("ELF", dynamic_cast<BooleanExpression*>($3), dynamic_cast<Statement*>($6)->getNextLabel());
                                                                             stackTable.popScope();
-                                                                            $$ = new Statement("ELF", boolExpStatment);
-                                                                             
-                                                                        } ADDSCOPE Statement  
-                                                                        REMOVESCOPE {}  
+    
+                                                                        }  
+                                                        REMOVESCOPE {}  
 
             | WHILE NEWLOOPSCOPE LPAREN Exp RPAREN                      {    
                                                                             BooleanExpression* exp = dynamic_cast<BooleanExpression*>($4);

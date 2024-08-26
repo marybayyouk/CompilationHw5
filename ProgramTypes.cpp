@@ -148,7 +148,7 @@ BooleanExpression::BooleanExpression(Node* exp) {
     string newReg;
     if(exp->getType() == "bool") {
         // determine if its true or false
-        string boolValue = (exp->getValue() == "true") ? "1" : "0";
+        string boolValue = (stackTable.findSymbol(exp->getValue())->truefalse == "true") ? "1" : "0";
         if (exp->getReg() == "") {
             // we got here from bool
             if (boolValue == "0") {
@@ -229,8 +229,7 @@ Expression::Expression(Node* terminalExp) {
         string newTrueL = buffer.freshLabel();
         string newFalseL = buffer.freshLabel();
         string freshReg;
-
-        string boolValue = (terminalExp->getValue() == "true") ? "1" : "0";
+        string boolValue = (stackTable.findSymbol(terminalExp->getValue())->truefalse == "true") ? "1" : "0";
 
         if (boolValue == "1") {
             freshReg = buffer.freshReg();
@@ -242,7 +241,7 @@ Expression::Expression(Node* terminalExp) {
             buffer.emit(freshReg + " = add i32 0, 0");  // Set the fresh register to 0
         }
         setReg(freshReg);
-        buffer.emit(newReg2 + " = icmp ne i32 1, " + getReg());
+        buffer.emit(newReg2 + " = icmp eq i32 1, " + getReg());
         codeGenerator.generateCondBranch(newReg2, newTrueL, newFalseL);
         setTrueLabel(newTrueL);
         setFalseLabel(newFalseL);
@@ -323,7 +322,8 @@ Bool::Bool(Node* exp, string trueFalse) {  // Exp -> True / False
     setFalseLabel(newFalseL);
     setType("bool");
     setValue(trueFalse);
-    
+    // stackTable.findSymbol(exp->getValue())->truefalse = trueFalse;
+    // cout<<stackTable.findSymbol(exp->getValue())->truefalse<<endl;
 }
 
 //////////////////////////////////////////Num////////////////////////////////////////////////////
@@ -551,6 +551,7 @@ Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need t
     }
 
     stackTable.addSymbolToProgram(id->getValue(), false, exp->getType(), "");
+    stackTable.findSymbol(id->getValue())->truefalse = exp->getValue();
     id->setType(exp->getType());
     codeGenerator.generateStore((stackTable.findSymbol(id->getValue()))->getOffset(), this->getReg(), (stackTable.getScope())->getBaseReg());    
 }
@@ -608,12 +609,13 @@ Statement::Statement(Node * id, Expression * exp) { //maybe i need to check if t
     }
 
     stackTable.addSymbolToProgram(id->getValue(), false, exp->getType(), "");
+    stackTable.findSymbol(id->getValue())->truefalse = exp->getValue();
     id->setType(exp->getType());
     codeGenerator.generateStore((stackTable.findSymbol(id->getValue()))->getOffset(), this->getReg(), (stackTable.getScope())->getBaseReg());
 }
 
 // Statement -> IF|IF-ELSE|WHILE LP EXP RP SS 
-Statement::Statement(const string cond, BooleanExpression* boolexp) {
+Statement::Statement(const string cond, BooleanExpression* boolexp, string nextLabel) {
     if (boolexp->getType() == "byte" && (stoi(boolexp->getValue()) > 255 || stoi(boolexp->getValue()) < 0)) {
         output::errorByteTooLarge(yylineno, boolexp->getValue());
         exit(0);
@@ -635,9 +637,9 @@ Statement::Statement(const string cond, BooleanExpression* boolexp) {
         codeGenerator.defineLable(boolexp->getFalseLabel());    
     }
     else { //IF-ELSE
-        setNextLabel(buffer.freshLabel());
-        codeGenerator.generateUncondBranch(stackTable.getScope()->getEntryLabel());
-        codeGenerator.defineLable(getNextLabel());
+        setNextLabel(nextLabel);
+        codeGenerator.generateUncondBranch(nextLabel);
+        codeGenerator.defineLable(nextLabel);
     }
 }
  Program::Program() {
@@ -647,8 +649,8 @@ Statement::Statement(const string cond, BooleanExpression* boolexp) {
 // Statement L Statement R 
 Statement::Statement(Statement* Statement) { }
 
-void Statement::afterElse() {
+string Statement::afterElse() {
     setNextLabel(buffer.freshLabel());
-    codeGenerator.defineLable(getNextLabel());
-    buffer.emit("after fresh else label");
+    codeGenerator.generateUncondBranch(getNextLabel());
+    return this->getNextLabel();
 }

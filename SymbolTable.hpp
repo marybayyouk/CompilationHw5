@@ -28,6 +28,7 @@ public:
     int getOffset() const { return symOffset; }
     bool getIsFunction() const { return isFunc; }
     string getType() const { return this->type; }
+    string truefalse = "true";
 };
 
 class SymbolTable {  ///scope

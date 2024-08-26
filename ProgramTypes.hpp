@@ -118,11 +118,11 @@ public:
     Statement(Statement* Statment); // Statement -> Statement
     Statement(Node* BCNode); // Statement -> BREAK / CONTINUE
     Statement(Call * call); // Statement -> Call SC
-    Statement(const string cond, BooleanExpression* exp); // Statement -> IF | IF-ELSE | WHILE LP BooleanExpression RP Statment
+    Statement(const string cond, BooleanExpression* exp, string nextLabel = ""); // Statement -> IF | IF-ELSE | WHILE LP BooleanExpression RP Statment
     Statement(Node * id, Expression * exp); // Statement -> ID Assign Exp SC
     Statement(Type* type,Node * id); // Statement -> Type ID SC  
     Statement(Type* type, Node * id, Expression * exp); // Statement -> Type ID Assign Exp SC
-    void afterElse(); //to use as parser.ypp
+    string afterElse(); //to use as parser.ypp
     string getNextLabel() const { return nextLabelS; }
     void setNextLabel(std::string label) { nextLabelS = label; }
 };
