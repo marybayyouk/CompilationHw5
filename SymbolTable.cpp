@@ -65,6 +65,8 @@ StackTable::StackTable() {
     (scopes.back())->addSymbol(printS);
     (scopes.back())->addSymbol(printIs);
     (scopes.back())->addSymbol(readIs);
+    (scopes.back())->addSymbol(new Symbol("true",0, false, "bool","" ));
+    (scopes.back())->addSymbol(new Symbol("false",0, false, "bool","" ));
 
     scopesOffset.back() = 3;
 }
