@@ -181,8 +181,7 @@ BooleanExpression::BooleanExpression(Node* exp) {
             setFalseLabel(exp->getFalseLabel());
         }
         // load the stroed value
-        
-        string newCmp = codeGenerator.generateIcmp("eq", "1", this->getReg());
+        string newCmp = codeGenerator.generateIcmp("eq", "1", getReg());
         codeGenerator.generateCondBranch(newCmp, getTrueLabel(), getFalseLabel());
     } else {
         // initialize the expression with the value of the expression - regular expression -
@@ -205,7 +204,6 @@ Expression::Expression(Call* call, bool flag) {
     else if (call->getType() == "bool") {
     setTrueLabel(buffer.freshLabel());
     setFalseLabel(buffer.freshLabel());
-    buffer.emit("in exp -> call");
     string newCmp = codeGenerator.generateIcmp("eq", "1", this->getReg());
     codeGenerator.generateCondBranch(newCmp, getTrueLabel(), getFalseLabel());
     }
@@ -223,7 +221,6 @@ Expression::Expression(Node* terminalExp) {
     setType(stackTable.findSymbol(terminalExp->getValue())->getType());
 
     if (this->getType() == "bool") {
-        //buffer.emit("Exp->ID started: ");
         string newReg2 = buffer.freshReg();
         string newReg = buffer.freshReg();
         string newTrueL = buffer.freshLabel();
@@ -232,16 +229,16 @@ Expression::Expression(Node* terminalExp) {
         string boolValue = (stackTable.findSymbol(terminalExp->getValue())->truefalse == "true") ? "1" : "0";
 
         if (boolValue == "1") {
-            freshReg = buffer.freshReg();
-            buffer.emit(freshReg + " = add i32 0, 0");  // Set the fresh register to 0
             newReg = buffer.freshReg();
-            buffer.emit(newReg + " = add i32 " + freshReg + ", 1");  
+            buffer.emit(newReg + " = add i32 0, 0");  // Set the fresh register to 0
+            freshReg = buffer.freshReg();
+            buffer.emit(freshReg + " = add i32 " + newReg + ", 1");  
         } else {
             freshReg = buffer.freshReg();
             buffer.emit(freshReg + " = add i32 0, 0");  // Set the fresh register to 0
         }
         setReg(freshReg);
-        buffer.emit(newReg2 + " = icmp eq i32 1, " + getReg());
+        buffer.emit(newReg2 + " = icmp eq i32 1, " + freshReg);
         codeGenerator.generateCondBranch(newReg2, newTrueL, newFalseL);
         setTrueLabel(newTrueL);
         setFalseLabel(newFalseL);
@@ -476,7 +473,6 @@ Statement::Statement(Type* type, Node * id) { //takeen
     string ptr_reg = buffer.freshReg();;
     string rbp = stackTable.getScope()->getBaseReg();
     int offset = stackTable.getScope()->getOffset();
-    buffer.emit("here started: ");
     //store the value in the stack
     buffer.emit(ptr_reg + " = getelementptr i32, i32* " + rbp + ", i32 " + to_string(offset));
     buffer.emit("store i32 " + id->getReg() + ", i32* %" + id->getReg());
@@ -496,7 +492,6 @@ Statement::Statement(Type* type, Node * id) { //takeen
 
         codeGenerator.defineLable(endLabel);
     }
-    buffer.emit("here ended: ");
 }
 
 // Statement -> Type ID Assign Exp SC //regFixed
