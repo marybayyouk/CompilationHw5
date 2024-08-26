@@ -9,12 +9,12 @@ using namespace std;
 
 
 void generateElfStatements(BooleanExpression* exp, bool isElf) {
-    buffer.emit("ElfStatement started: ");
+    // buffer.emit("ElfStatement started: ");
     if (isElf) 
         buffer.emit("br label %" + exp->getTrueLabel() + "\n" + exp->getTrueLabel() + ":");
     else
         buffer.emit("br label %" + exp->getFalseLabel() + "\n" + exp->getFalseLabel() + ":");    
-    buffer.emit("ElfStatement ended: ");
+    // buffer.emit("ElfStatement ended: ");
 
 }
 
@@ -315,8 +315,7 @@ Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "",
             output::errorPrototypeMismatch(yylineno,terminalID->getValue(), "string");
             exit(0);
         }
-        buffer.emit(getCallEmitLine(terminalID->getValue(), exp->getReg()));
-        // buffer.emit(exp->getValue());
+        setValue(getCallEmitLine(terminalID->getValue(), exp->getReg()));
     }
     
     //PRINTI FUNCTION
@@ -332,7 +331,6 @@ Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "",
         }
         buffer.emit(args + " = add i32 " + newReg + ", 0");
         buffer.emit(getCallEmitLine(terminalID->getValue(), newReg));
-        // buffer.emit(exp->getValue());
     }
     //MUST BE READI FUNCTION
     else { 
@@ -453,7 +451,6 @@ Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need t
     //     output::errorPrototypeMismatch(yylineno, exp->getValue(), "int");
     //     exit(0);
     // }
-    buffer.emit("Statement -> Type ID Assign Exp SC: start");
     //buffer.emit("exp->reg: " + exp->getReg());
     if (exp->getType() == "byte") {
         string byteReg = buffer.freshReg();;
@@ -476,10 +473,12 @@ Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need t
         // //now hanndle the fucking phi
         // buffer.emit(boolReg + " = phi i32 [ 1, %" + boolTrueL + " ], [ 0, %" + boolFalseL + " ]");
         this->setReg(boolReg);
+        buffer.emit(this->getReg() + " = add i32 " + exp->getReg() + ", 0");
     }
     if (exp->getType() == "int") { 
 
         this->setReg(exp->getReg());
+
     }
 
     stackTable.addSymbolToProgram(id->getValue(), false, exp->getType(), "");
@@ -487,7 +486,6 @@ Statement::Statement(Type* type, Node * id, Expression * exp) { //maybe i need t
     //buffer.emit("param 2: " + getReg());
     //buffer.emit("param 3: " + (stackTable.getScope())->getBaseReg());
     codeGenerator.generateStore((stackTable.findSymbol(id->getValue()))->getOffset(), this->getReg(), (stackTable.getScope())->getBaseReg());    
-    buffer.emit("Statement -> Type ID Assign Exp SC: end");
 }
 
 // Statement -> ID Assign Exp SC //regFixed

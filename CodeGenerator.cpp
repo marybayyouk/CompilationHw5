@@ -6,7 +6,7 @@ extern CodeBuffer buffer;
 
 void CodeGenerator::emitGlobals()
 {
-    string rbp = buffer.freshReg();;
+    string rbp = freshGlobalReg();
     stackTable.getScope()->getBaseReg() = rbp;
     buffer.emit("define i32 @main(){");
     buffer.emit(rbp + " = alloca i32, i32 50");
@@ -89,7 +89,7 @@ void CodeGenerator::emitProgramStart() {
 }
 
 string CodeGenerator::generateAlloca() {
-    string allocaReg = buffer.freshReg();;
+    string allocaReg = freshGlobalReg();
     buffer.emit(allocaReg + " = alloca i32 50"); ///allocate stack
     return allocaReg;
 }
@@ -100,7 +100,7 @@ string CodeGenerator::generateLoad(int offset, const string& ptr, string expType
         return "%" + to_string(offset);
 
     string reg = buffer.freshReg();
-    string stackReg = buffer.freshReg();;
+    string stackReg = buffer.freshReg();
     //get the address of the stack
     buffer.emit(stackReg + " = getelementptr i32, i32* " + ptr + ", i32 " + to_string(offset));
     buffer.emit(reg + " = load i32, i32* " + stackReg);
@@ -109,7 +109,7 @@ string CodeGenerator::generateLoad(int offset, const string& ptr, string expType
 }
 
 string CodeGenerator::generateIcmp(const string& op, const string& lhs, const string& rhs) {
-    string resReg = buffer.freshReg();;
+    string resReg = buffer.freshReg();
     buffer.emit(resReg + " = icmp " + op + " i32 " + lhs + ", " + rhs);
     return resReg;
 }
@@ -119,7 +119,7 @@ void CodeGenerator::generateGlobalVar(const string& name, const string& type) {
 }
 
 void CodeGenerator::generateStore(int offset, const string& valueReg, const string& ptr) { 
-    string stackReg = buffer.freshReg();;
+    string stackReg = buffer.freshReg();
     //get the address of the stack
     buffer.emit(stackReg + " = getelementptr i32, i32* " + ptr + ", i32 " + to_string(offset));
     //store the value in the stack
