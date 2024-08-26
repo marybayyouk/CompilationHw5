@@ -105,11 +105,25 @@ BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, const string
             codeGenerator.defineLable(leftExp->getTrueLabel()); //before i defined Lexp->true
             codeGenerator.generateUncondBranch(rightExp->getTrueLabel()); //rightExp->true
             // buffer.emit("OR ended: ");
+            if ((stackTable.findSymbol(leftExp->getValue())->truefalse == "true") || (stackTable.findSymbol(rightExp->getValue())->truefalse == "true"))
+            {
+                setValue("true");
+            }
+            else {
+                setValue("false");
+            }  
         } else {
+            if ((stackTable.findSymbol(leftExp->getValue())->truefalse == "false") || (stackTable.findSymbol(rightExp->getValue())->truefalse == "false"))
+                {
+                    setValue("false");
+                }
+                else {setValue("true");
+                }
             // buffer.emit("And started: ");
             codeGenerator.defineLable(leftExp->getFalseLabel());
             codeGenerator.generateUncondBranch(rightExp->getFalseLabel());
         //    buffer.emit("And ended: ");
+
         }
     } else { //RELOP
         //buffer.emit("Relop started: ");
