@@ -82,7 +82,7 @@ string getRelopOp(string op) {
 
 string freshGlobalReg() {
     int static currReg = 1;
-    return "@g" + to_string(currReg++);
+    return "%glob_" + to_string(currReg++);
 }
 
 string allocateLable(const string& prefix) {  

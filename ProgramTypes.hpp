@@ -64,6 +64,7 @@ class Expression : public Node {
 public:
     // Expression() = default;
     Expression(string val = "", string type = "", string reg = "" ) : Node(val, type, reg) {};
+    Expression(Call* call, bool flag = true); //Exp -> Call
     // Expression(string reg, string value, string type) : Node(reg, value, type) {};
     Expression(Node* terminalExp); // Expression -> ID
     Expression(Type* type, Node* exp); // Expression -> LPAREN Type RPAREN Exp
@@ -76,7 +77,7 @@ class BooleanExpression : public Expression {
     string falseLabel; //target label for a jump when condition B evaluates to false
 public:
     BooleanExpression() = default;
-    BooleanExpression(Call* call); // Exp -> Call
+    //BooleanExpression(Call* call); // Exp -> Call
     BooleanExpression(Node* exp); // Exp -> LPAREN Exp RPAREN
     BooleanExpression(Node* leftExp, Node* rightExp, const string op); // Exp -> Exp RELOP/AND/OR Exp
     BooleanExpression(Node* boolexp, const string op); // Exp -> NOT Exp

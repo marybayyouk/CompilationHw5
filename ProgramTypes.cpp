@@ -68,6 +68,11 @@ BooleanExpression::BooleanExpression(Node* boolExp, const string op) {
     string temp = boolExp->getFalseLabel();
     boolExp->setFalseLabel(boolExp->getTrueLabel());
     boolExp->setTrueLabel(temp);
+    if (boolExp->getValue() == "true") {
+        setValue("false");
+    } else {
+        setValue("true");
+    }
 }
 
 // BooleanExpression -> Exp RELOP/AND/OR Exp //regFixed
@@ -86,20 +91,18 @@ BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, const string
         // setTrueLabel(leftExp->getTrueLabel());
 
         if(op == "OR") {
-            buffer.emit("OR started: ");
+            //buffer.emit("OR started: ");
             codeGenerator.defineLable(leftExp->getTrueLabel()); //before i defined Lexp->true
             codeGenerator.generateUncondBranch(rightExp->getTrueLabel()); //rightExp->true
-            buffer.emit("OR ended: ");
-        }
-        else {
-            buffer.emit("And started: ");
+            //buffer.emit("OR ended: ");
+        } else {
+            //buffer.emit("And started: ");
             codeGenerator.defineLable(leftExp->getFalseLabel());
             codeGenerator.generateUncondBranch(rightExp->getFalseLabel());
-            buffer.emit("And ended: ");
+           //buffer.emit("And ended: ");
         }
-    }
-    else { //RELOP
-        buffer.emit("Relop started: ");
+    } else { //RELOP
+        //buffer.emit("Relop started: ");
         if ((lType != "int" && lType != "byte") || (rType != "int" && rType != "byte")) {
             output::errorMismatch(yylineno);
             exit(0);
@@ -126,7 +129,7 @@ BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, const string
             buffer.emit(getReg() + " = " + oper + " i32 " + leftExp->getReg() + ", " + rightExp->getReg());
         }
         codeGenerator.generateCondBranch(getReg(), getTrueLabel(), getFalseLabel());
-        buffer.emit("Relop ended: ");
+        //buffer.emit("Relop ended: ");
     }
 }
 
@@ -136,8 +139,17 @@ BooleanExpression::BooleanExpression(Node* exp) {
         setReg(exp->getReg());
         setType("bool");
         setValue(exp->getValue());
-        setTrueLabel(exp->getTrueLabel());
-        setFalseLabel(exp->getFalseLabel());
+        if(getTrueLabel() == "") {
+            setTrueLabel(buffer.freshLabel());
+        } else {
+            setTrueLabel(exp->getTrueLabel());
+        }
+        if(getFalseLabel() == "") {
+            setFalseLabel(exp->getFalseLabel());
+        } else {
+            setFalseLabel(buffer.freshLabel());
+        }
+        
     } else {
         // initialize the expression with the value of the expression - regular expression -
         setValue(exp->getValue());
@@ -146,13 +158,22 @@ BooleanExpression::BooleanExpression(Node* exp) {
     }
 }
 
-// EXP -> Call //not sure
-BooleanExpression::BooleanExpression(Call* call) {
+// EXP -> Call
+Expression::Expression(Call* call, bool flag) {
     setValue(call->getValue());
     setType(stackTable.findSymbol(call->getValue())->getType());
+    string name = codeGenerator.generateLoad(stackTable.findSymbol(call->getValue())->getOffset(), stackTable.getScope()->getBaseReg(), call->getType());
     setReg(call->getReg());
-    setTrueLabel(call->getTrueLabel());
-    setFalseLabel(call->getFalseLabel());
+    if (call->getType() == "byte") {
+        string trunRet = emitTruncation(name, "byte", false);
+        setReg(trunRet);
+    }
+    else if (call->getType() == "bool") {
+    setTrueLabel(buffer.freshLabel());
+    setFalseLabel(buffer.freshLabel());
+    string newCmp = codeGenerator.generateIcmp("eq", "1", this->getReg());
+    codeGenerator.generateCondBranch(newCmp, getTrueLabel(), getFalseLabel());
+    }
 }
 
 //////////////////////////////////////////Expression///////////////////////////////////////////
@@ -168,10 +189,8 @@ Expression::Expression(Node* terminalExp) {
     setType(stackTable.findSymbol(terminalExp->getValue())->getType());
     int offset = stackTable.findSymbol(terminalExp->getValue())->getOffset();
     string ptr = stackTable.getScope()->getBaseReg();
-    buffer.emit("-------------------------***************------------------------------");
 
     string reg = codeGenerator.generateLoad(offset, ptr, terminalExp->getType());    
-    buffer.emit("-------------------------***************------------------------------");
     setReg(reg); 
 
     if (this->getType() == "bool") {
@@ -247,8 +266,8 @@ Expression::Expression(Node* leftExp, Node* rightExp, const string op) {
 //Bool -> TRUE | false //regFixed
 Bool::Bool(Node* exp, string trueFalse) {  // Exp -> True / False
     //create new labels for the true and false branches
-    string newTrueL = CodeBuffer::instance().freshLabel();
-    string newFalseL = CodeBuffer::instance().freshLabel();
+    string newTrueL = exp->getTrueLabel();
+    string newFalseL = exp->getFalseLabel();
     setTrueLabel(newTrueL);
     setFalseLabel(newFalseL);
     setType("bool");
@@ -270,7 +289,7 @@ Num::Num(Node* exp) : Expression() { //Exp -> NUM
     setType("int");
     setReg(buffer.freshReg());
     exp->setReg(getReg());
-    CodeBuffer::instance().emit(this->getReg() + " = add i32" + exp->getValue() + " , 0");
+    CodeBuffer::instance().emit(getReg() + " = add i32" + exp->getValue() + " , 0");
 };
 
 ////////////////////////////////////////NumB////////////////////////////////////////////////////
@@ -293,13 +312,15 @@ String::String(Node* exp) : Expression() { //Exp -> STRING
     setValue(exp->getValue());
     setType("string");
     string global = freshGlobalReg();
-    string local = buffer.freshReg();;
-    CodeBuffer::instance().emit(global + " = constant [" + to_string(exp->getValue().size() + 1) + " x i8]" + " c" + exp->getValue() + "\\00\"");
-    CodeBuffer::instance().emit(local + ".ptr = getelementptr[" + to_string(exp->getValue().size() + 1) + " x i8]" 
+    string local = buffer.freshReg();
+    //cout << "**********************************************************************************************" << endl;
+    buffer.emit(global + " = constant [" + to_string(exp->getValue().size() + 1) + " x i8]" + " c" + exp->getValue() + "\\00\"");
+    buffer.emit(local + ".ptr = getelementptr[" + to_string(exp->getValue().size() + 1) + " x i8]" 
                     + ", " + to_string(exp->getValue().size() + 1) + " x i8]*  " + global + ", i32 0, i32 0");
     setReg(local);   
-    exp->setReg(local);
+    //exp->stReg("%var_" + to_string());
 }
+
 
 //////////////////////////////////////////Call//////////////////////////////////////////
 
@@ -315,7 +336,8 @@ Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "",
             output::errorPrototypeMismatch(yylineno,terminalID->getValue(), "string");
             exit(0);
         }
-        setValue(getCallEmitLine(terminalID->getValue(), exp->getReg()));
+
+        buffer.emit(getCallEmitLine(terminalID->getValue(), exp->getReg()));
     }
     
     //PRINTI FUNCTION
@@ -336,22 +358,20 @@ Call::Call(Node* terminalID, Expression* exp) : Node(terminalID->getValue(), "",
     else { 
         string args = buffer.freshReg();
         string newReg = buffer.freshReg();
+        string result = buffer.freshReg();
         if(exp->getType() != "byte" && exp->getType() != "int") {
             output::errorPrototypeMismatch(yylineno,terminalID->getValue(), "int");
             exit(0);
         }
-        if(exp->getType() == "byte") {
+        if( exp->getType() == "byte") {
             buffer.emit(newReg + " = zext i8 " + exp->getReg() + " to i32");
-            buffer.emit(args + " = add i32 " + newReg + ", 0");
         }
-        else
-            buffer.emit(newReg + " = add i32 " + exp->getReg() + ", 0");
-
+        buffer.emit(args + " = add i32 " + newReg + ", 0");
         setType(stackTable.findSymbol(terminalID->getValue())->getType());
         setValue(stackTable.findSymbol(terminalID->getValue())->getName());
-        buffer.emit(getCallEmitLine(args, newReg));
-        setReg(args);
-        codeGenerator.generateStore(stackTable.findSymbol(terminalID->getValue())->getOffset(), args, stackTable.getScope()->getBaseReg());
+        buffer.emit(result + "= call i32 @readi(i32 " + args + ");");
+        setReg(result);
+        codeGenerator.generateStore(stackTable.findSymbol(terminalID->getValue())->getOffset(), result, stackTable.getScope()->getBaseReg());
     }
 }
 
@@ -567,19 +587,14 @@ Statement::Statement(const string cond, BooleanExpression* boolexp) {
         codeGenerator.generateUncondBranch(stackTable.findInnermostLoopScope()->getEntryLabel());
     }
     else if (cond == "IF") {
-        buffer.emit("-------------------------------IF-------------------------------");
         codeGenerator.generateUncondBranch(boolexp->getFalseLabel());
         codeGenerator.defineLable(boolexp->getTrueLabel());
-        buffer.emit("-----------------------------------------------------------------");
 
     }
     else { //IF-ELSE
-        buffer.emit("-------------------------------ELSE-----------------------------");
         setNextLabel(buffer.freshLabel());
         codeGenerator.generateUncondBranch(stackTable.getScope()->getEntryLabel());
         codeGenerator.defineLable(getNextLabel());
-        buffer.emit("-----------------------------------------------------------------");
-
     }
 }
  Program::Program() {

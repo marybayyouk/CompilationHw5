@@ -89,7 +89,7 @@ Exp:    LPAREN Exp RPAREN                                               { $$ = n
 
         | ID                                                            { $$ = new Expression($1);} 
 
-        | Call                                                          { $$ = new BooleanExpression($1); }
+        | Call                                                          { $$ = new Expression(dynamic_cast<Call*>($1), true); }
 
         | NUM                                                           { $$ = new Num($1); }
         | NUM B                                                         { $$ = new NumB($1); }
@@ -142,7 +142,8 @@ IFMARK: Exp                                                             {
 ;
 CHECKBOOL: Exp                                                          {   
                                                                             BooleanExpression* newExpression = new BooleanExpression($1);
-                                                                            $$=newExpression;
+                                                                            buffer.emit(newExpression->getTrueLabel() + ":");
+                                                                            $$ = newExpression;
                                                                         }
 ;
 %%
