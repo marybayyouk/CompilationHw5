@@ -140,6 +140,7 @@ IFMARK: Exp                                                             {
                                                                             codeGenerator.generateElfStatements(dynamic_cast<BooleanExpression*> (Exp), true);
                                                                         }                           
 ;
+
 CHECKBOOL: Exp                                                          {   
                                                                             BooleanExpression* newExpression = new BooleanExpression($1);
                                                                             buffer.emit(newExpression->getTrueLabel() + ":");

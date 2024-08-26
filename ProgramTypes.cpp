@@ -79,6 +79,16 @@ BooleanExpression::BooleanExpression(Node* boolExp, const string op) {
 BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, const string op) { 
     string lType = leftExp->getType();
     string rType = rightExp->getType();
+    if (leftExp->getTrueLabel() == "") {
+        //we reach here from Bool
+        leftExp->setTrueLabel(buffer.freshLabel());
+        leftExp->setFalseLabel(buffer.freshLabel());
+    }
+    if (rightExp->getTrueLabel() == "") {
+        //we reach here from Bool
+        rightExp->setTrueLabel(buffer.freshLabel());
+        rightExp->setFalseLabel(buffer.freshLabel());
+    }
 
     if (op == "OR" || op == "AND") {  
         if (lType != "bool" || rType != "bool") {
@@ -91,15 +101,15 @@ BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, const string
         // setTrueLabel(leftExp->getTrueLabel());
 
         if(op == "OR") {
-            //buffer.emit("OR started: ");
+            // buffer.emit("OR started: ");
             codeGenerator.defineLable(leftExp->getTrueLabel()); //before i defined Lexp->true
             codeGenerator.generateUncondBranch(rightExp->getTrueLabel()); //rightExp->true
-            //buffer.emit("OR ended: ");
+            // buffer.emit("OR ended: ");
         } else {
-            //buffer.emit("And started: ");
+            // buffer.emit("And started: ");
             codeGenerator.defineLable(leftExp->getFalseLabel());
             codeGenerator.generateUncondBranch(rightExp->getFalseLabel());
-           //buffer.emit("And ended: ");
+        //    buffer.emit("And ended: ");
         }
     } else { //RELOP
         //buffer.emit("Relop started: ");
@@ -136,20 +146,30 @@ BooleanExpression::BooleanExpression(Node* leftExp, Node* rightExp, const string
 // Exp -> LParen Exp RParen //regFixed
 BooleanExpression::BooleanExpression(Node* exp) {  
     if(exp->getType() == "bool") {
-        setReg(exp->getReg());
+        if (exp->getReg() == "") {
+            // we got here from bool
+            setReg(buffer.freshReg());
+        } else {
+            setReg(exp->getReg());
+        }
         setType("bool");
         setValue(exp->getValue());
-        if(getTrueLabel() == "") {
+        if (exp -> getTrueLabel() == "") {
+            // we reach here only if we came from Bool constructor
             setTrueLabel(buffer.freshLabel());
         } else {
+            // we already created true and false, probably from bool expression
             setTrueLabel(exp->getTrueLabel());
         }
-        if(getFalseLabel() == "") {
-            setFalseLabel(exp->getFalseLabel());
-        } else {
+        if (exp -> getFalseLabel() == "") {
+            // we reach here only if we came from Bool constructor
             setFalseLabel(buffer.freshLabel());
+
+        } else {
+            setFalseLabel(exp->getFalseLabel());
         }
-        
+        string newCmp = codeGenerator.generateIcmp("eq", "1", this->getReg());
+        codeGenerator.generateCondBranch(newCmp, getTrueLabel(), getFalseLabel());
     } else {
         // initialize the expression with the value of the expression - regular expression -
         setValue(exp->getValue());
@@ -266,20 +286,19 @@ Expression::Expression(Node* leftExp, Node* rightExp, const string op) {
 //Bool -> TRUE | false //regFixed
 Bool::Bool(Node* exp, string trueFalse) {  // Exp -> True / False
     //create new labels for the true and false branches
-    string newTrueL = exp->getTrueLabel();
-    string newFalseL = exp->getFalseLabel();
+    string newTrueL = buffer.freshLabel();
+    string newFalseL = buffer.freshLabel();
     setTrueLabel(newTrueL);
     setFalseLabel(newFalseL);
     setType("bool");
     setValue(trueFalse);
     //buffer.emit("bool C'tor started: ");
     //emit the branch instruction
-    if (trueFalse == "true") { 
-        CodeBuffer::instance().emit("br label %" + newTrueL);
-    } else { 
-        CodeBuffer::instance().emit("br label %" + newFalseL);
-    }
-    //buffer.emit("bool C'tor ended: ");
+    // if (trueFalse == "true") { 
+    //     CodeBuffer::instance().emit("br label %" + newTrueL);
+    // } else { 
+    //     CodeBuffer::instance().emit("br label %" + newFalseL);
+    // }
 }
 
 //////////////////////////////////////////Num////////////////////////////////////////////////////
@@ -289,7 +308,7 @@ Num::Num(Node* exp) : Expression() { //Exp -> NUM
     setType("int");
     setReg(buffer.freshReg());
     exp->setReg(getReg());
-    CodeBuffer::instance().emit(getReg() + " = add i32" + exp->getValue() + " , 0");
+    buffer.emit(getReg() + " = add i32" + exp->getValue() + " , 0");
 };
 
 ////////////////////////////////////////NumB////////////////////////////////////////////////////
@@ -309,16 +328,21 @@ NumB::NumB(Node* expression) : Expression() {
 //////////////////////////////////////////String//////////////////////////////////////////
 //Exp -> STRING // regFixed
 String::String(Node* exp) : Expression() { //Exp -> STRING
-    setValue(exp->getValue());
+    // Out scanner produces extra "" so we strip them here
+    std::string value = exp->getValue();
+    if (!value.empty() && value.front() == '"' && value.back() == '"') {
+        value = value.substr(1, value.size() - 2);
+    }
+
+    setValue(value);
     setType("string");
     string global = freshGlobalReg();
     string local = buffer.freshReg();
-    //cout << "**********************************************************************************************" << endl;
-    buffer.emit(global + " = constant [" + to_string(exp->getValue().size() + 1) + " x i8]" + " c" + exp->getValue() + "\\00\"");
-    buffer.emit(local + ".ptr = getelementptr[" + to_string(exp->getValue().size() + 1) + " x i8]" 
-                    + ", " + to_string(exp->getValue().size() + 1) + " x i8]*  " + global + ", i32 0, i32 0");
+
+    buffer.emitGlobal(global + " = constant [" + to_string(value.size() + 1) + " x i8]" + " c\"" + value + "\\00\"");
+    buffer.emit(local + ".ptr = getelementptr[" + to_string(value.size() + 1) + " x i8]" 
+                    + ", [" + to_string(value.size() + 1) + " x i8]*  " + global + ", i32 0, i32 0");
     setReg(local);   
-    //exp->stReg("%var_" + to_string());
 }
 
 
@@ -523,11 +547,6 @@ Statement::Statement(Node * id, Expression * exp) { //maybe i need to check if t
         output::errorByteTooLarge(yylineno, exp->getValue());
         exit(0);
     }
-    //function without args case: print; | printi; | readi;
-    // if( (exp->getType() == "printi" || "readi" || "readi") && ) { /// i need to hanle this case later 
-    //     output::errorPrototypeMismatch(yylineno, exp->getValue(), "int");
-    //     exit(0);
-    // }
 
     if (exp->getType() == "byte") {
         string byteReg = buffer.freshReg();;
@@ -588,8 +607,6 @@ Statement::Statement(const string cond, BooleanExpression* boolexp) {
     }
     else if (cond == "IF") {
         codeGenerator.generateUncondBranch(boolexp->getFalseLabel());
-        codeGenerator.defineLable(boolexp->getTrueLabel());
-
     }
     else { //IF-ELSE
         setNextLabel(buffer.freshLabel());

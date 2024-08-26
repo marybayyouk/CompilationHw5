@@ -6,7 +6,7 @@ extern CodeBuffer buffer;
 
 void CodeGenerator::emitGlobals()
 {
-    string rbp = freshGlobalReg();
+    string rbp = buffer.freshReg();
     stackTable.getScope()->getBaseReg() = rbp;
     buffer.emit("define i32 @main(){");
     buffer.emit(rbp + " = alloca i32, i32 50");
