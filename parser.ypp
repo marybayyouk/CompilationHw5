@@ -53,16 +53,15 @@ Statement: LBRACE ADDSCOPE Statements REMOVESCOPE RBRACE                { $$ = n
                                                                         { $$ = new Statement("IF", dynamic_cast<BooleanExpression*>($3)); stackTable.popScope();}  
         
             | IF LPAREN CHECKBOOL RPAREN ADDSCOPE Statement 
-              ELSE                                                      {                                                        
+                                                ELSE                    {                                                        
                                                                             std::string nextLabel = dynamic_cast<Statement*>($6)->afterElse();                                  
-                                                                            buffer.emit(dynamic_cast<BooleanExpression*>($3)->getFalseLabel()+":");} 
-                                                        ADDSCOPE Statement                                                             
-                                                                        {
+                                                                            buffer.emit(dynamic_cast<BooleanExpression*>($3)->getFalseLabel()+":");
+                                                                        } 
+                                                ADDSCOPE Statement      {
                                                                             $$ = new Statement("ELF", dynamic_cast<BooleanExpression*>($3), dynamic_cast<Statement*>($6)->getNextLabel());
                                                                             stackTable.popScope();
-    
-                                                                        }  
-                                                        REMOVESCOPE {}  
+                                                                        }                                                         
+                                                REMOVESCOPE {}  
 
             | WHILE NEWLOOPSCOPE LPAREN Exp RPAREN                      {    
                                                                             BooleanExpression* exp = dynamic_cast<BooleanExpression*>($4);
@@ -70,7 +69,7 @@ Statement: LBRACE ADDSCOPE Statements REMOVESCOPE RBRACE                { $$ = n
                                                                             Statement { $$ = new Statement("WHILE", dynamic_cast<BooleanExpression*>($3)) };          
                                                                             endingLoopMarker();                                              
                                                                         } 
-
+                                                                        
             | BREAK SC                                                  { $$ = new Statement($1); }
             | CONTINUE SC                                               { $$ = new Statement($1); }
 
@@ -88,7 +87,6 @@ Exp:    LPAREN Exp RPAREN                                               { $$ = n
         | Exp MULTIPLY Exp                                              { $$ = new Expression($1, $3, "MUL"); }
 
         | ID                                                            { $$ = new Expression($1);} 
-
         | Call                                                          { $$ = new Expression(dynamic_cast<Call*>($1), true); }
 
         | NUM                                                           { $$ = new Num($1); }
@@ -98,16 +96,12 @@ Exp:    LPAREN Exp RPAREN                                               { $$ = n
         | FALSE                                                         { $$ = new Bool($1, "false"); }
 
         | NOT Exp                                                       { $$ = new BooleanExpression(dynamic_cast<Expression*>($2), "not");}
+                    
+        | Exp AND  { buffer.emit(dynamic_cast<BooleanExpression*>($1)->getTrueLabel() + ":" ); }                                     
+                Exp { $$ = new BooleanExpression($1, $4, "AND"); } 
 
-        | Exp AND  { buffer.emit(dynamic_cast<BooleanExpression*>($1)->getTrueLabel() + ":" ); } Exp                                      
-                                                                        { 
-                                                                            $$ = new BooleanExpression($1, $4, "AND");
-                                                                        } 
-
-        | Exp OR  { buffer.emit(dynamic_cast<BooleanExpression*>($1)->getFalseLabel() + ":" ); } Exp                                        
-                                                                        { 
-                                                                            $$ = new BooleanExpression($1, $4, "OR");
-                                                                        }
+        | Exp OR  { buffer.emit(dynamic_cast<BooleanExpression*>($1)->getFalseLabel() + ":" ); }                                      
+                Exp { $$ = new BooleanExpression($1, $4, "OR"); }
 
         | Exp EQ Exp                                                    { $$ = new BooleanExpression($1, $3, "EQ"); }
         | Exp NE Exp                                                    { $$ = new BooleanExpression($1, $3, "NE"); }
@@ -140,7 +134,6 @@ IFMARK: Exp                                                             {
                                                                             codeGenerator.generateElfStatements(dynamic_cast<BooleanExpression*> (Exp), true);
                                                                         }                           
 ;
-
 CHECKBOOL: Exp                                                          {   
                                                                             BooleanExpression* newExpression = new BooleanExpression($1);
                                                                             buffer.emit(newExpression->getTrueLabel() + ":");
@@ -148,6 +141,7 @@ CHECKBOOL: Exp                                                          {
                                                                         }
 ;
 %%
+
 StackTable stackTable = StackTable();
 CodeGenerator codeGenerator = CodeGenerator();
 

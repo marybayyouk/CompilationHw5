@@ -3,9 +3,7 @@
 
 extern CodeBuffer buffer;
 
-
-void CodeGenerator::emitGlobals()
-{
+void CodeGenerator::emitGlobals() {
     string rbp = buffer.freshReg();
     stackTable.getScope()->getBaseReg() = rbp;
     buffer.emit("define i32 @main(){");
@@ -54,20 +52,23 @@ void CodeGenerator::emitGlobals()
     buffer.emitGlobal("}");
 }
 
+//Generate Return Instruction for all the functions EXCEPT main
 void CodeGenerator::emitFuncRet() {
     buffer.emit("ret i32 0");
 }
 
+//Generate Return Instruction for main
 void CodeGenerator::emitProgramEnd(){
-        emitFuncRet();
-        buffer.emit("}");
+    emitFuncRet();
+    buffer.emit("}");
 }
 
+//Define Label - Start of a new block
 void CodeGenerator::defineLable(const string& label) {
     buffer.emit(label + ":");
 }
 
-void CodeGenerator::checkDivZero(const string& reg) { ///NEED TO CHECK IT LATER NOT SURE IF IT WORKS
+void CodeGenerator::checkDivZero(const string& reg) { 
     string zeroR = buffer.freshReg();;
     string compareReg = buffer.freshReg();;
     string IllegalDivLabel = allocateLable("divByZero");
@@ -98,13 +99,11 @@ string CodeGenerator::generateAlloca() {
 string CodeGenerator::generateLoad(int offset, const string& ptr, string expType) {
     if (offset < 0)
         return "%" + to_string(offset);
-
     string reg = buffer.freshReg();
     string stackReg = buffer.freshReg();
     //get the address of the stack
     buffer.emit(stackReg + " = getelementptr i32, i32* " + ptr + ", i32 " + to_string(offset));
     buffer.emit(reg + " = load i32, i32* " + stackReg);
-
     return reg;
 }
 
@@ -124,51 +123,22 @@ void CodeGenerator::generateStore(int offset, const string& valueReg, const stri
     buffer.emit(stackReg + " = getelementptr i32, i32* " + ptr + ", i32 " + to_string(offset));
     //store the value in the stack
     buffer.emit("store i32 " + valueReg + ", i32* " + stackReg);
-    ///IN PROGRAM TYPES NEED TO HANDLE NODE->TYPE == BOOL
 }
 
+//Condetional Jumo To New Label - End of the curr block
 void CodeGenerator::generateCondBranch(const string& condReg, const string& trueLabel, const string& falseLabel) {
     buffer.emit("br i1 " + condReg + ", label %" + trueLabel + ", label %" + falseLabel);
 }   
 
-void CodeGenerator::generateUncondBranch(const string& label) { //takeen 
+//UnCondetional Jump To New Label - End of the curr block
+void CodeGenerator::generateUncondBranch(const string& label) { 
     buffer.emit("br label %" + label);
 }
 
 // Break and Continue
-void CodeGenerator::generateJumpStatement(const string& label) { //takeen
+void CodeGenerator::generateJumpStatement(const string& label) { 
     if(label == "BREAK") 
         generateUncondBranch(stackTable.getScope()->getEntryLabel());
     else if(label == "CONTINUE") 
         generateUncondBranch(stackTable.getScope()->getNextLabel());
 }
-
-// string CodeGenerator::generateBinaryInst(const string& expType, const string& lhs,const string& rhs, string op, string inst) {
-//     if (inst == "BINOP") { //NEED TO REVIEW THIS PART - SOMETHING IS WRONG
-//         op = getBinopOp(op);
-
-//         if (op == "DIV") {   
-//             checkDivZero(rhs);  ///check if division by zero
-//             if(expType == "INT") 
-//                 op = "sdiv";
-//             else 
-//                 op = "udiv";
-//         }
-//     }
-//     else if(inst == "RELOP") {
-//         op = getRelopOp(op);
-//         generateIcmp(op, lhs, rhs);
-//     }
-//     return resReg;
-// }
-
-// void CodeGenerator::generatePhi(const string& resReg, const string& type, const vector<pair<string, string>>& labelsAndRegs) {
-//     string phiReg = buffer.freshReg();;
-//     string phiStr = "phi i32 ";
-//     for (auto& labelAndReg : labelsAndRegs) 
-//         phiStr += "[ " + labelAndReg.first + ", %" + labelAndReg.second + " ], ";
-//     phiStr.pop_back();
-//     phiStr.pop_back();
-//     buffer.emit(phiReg + " = " + phiStr);
-//     buffer.emit(resReg + " = " + phiReg);
-// }

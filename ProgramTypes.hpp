@@ -7,11 +7,6 @@
 #define YYSTYPE Node*
 class Expression;
 
-
-void isBoolExp(Expression* exp); //to use in parser.ypp
-void endingLoopMarker(); //to use in parser.ypp to mark the end of a WHILE loop
-
-
 class Node {
     string reg;
     string value;
@@ -60,12 +55,9 @@ public:
 };
 
 class Expression : public Node {    
-    //bool isFunction;
 public:
-    // Expression() = default;
     Expression(string val = "", string type = "", string reg = "" ) : Node(val, type, reg) {};
     Expression(Call* call, bool flag = true); //Exp -> Call
-    // Expression(string reg, string value, string type) : Node(reg, value, type) {};
     Expression(Node* terminalExp); // Expression -> ID
     Expression(Type* type, Node* exp); // Expression -> LPAREN Type RPAREN Exp
     Expression(Node* leftExp, Node* rightExp, const string op); // Expression -> Expression Binop Expression
@@ -73,21 +65,16 @@ public:
 };
 
 class BooleanExpression : public Expression {
-    string trueLabel;// target label for a jump when condition B evaluates to true
+    string trueLabel; //target label for a jump when condition B evaluates to true
     string falseLabel; //target label for a jump when condition B evaluates to false
 public:
     BooleanExpression() = default;
-    //BooleanExpression(Call* call); // Exp -> Call
     BooleanExpression(Node* exp); // Exp -> LPAREN Exp RPAREN
     BooleanExpression(Node* leftExp, Node* rightExp, const string op); // Exp -> Exp RELOP/AND/OR Exp
     BooleanExpression(Node* boolexp, const string op); // Exp -> NOT Exp
     ~BooleanExpression() = default;
-    // string getTrueLabel() const { return trueLabel; }
-    // string getFalseLabel() const { return falseLabel; }
     string getTrueLabel() const { return trueLabel; }
     string getFalseLabel() const { return falseLabel; }
-    //string getNextLabel() const { string trL = "value: " + getValue() + " ; nextLabel: " + nextLabel; return trL; }
-
     void setTrueLabel(std::string label) { trueLabel = label;} 
     void setFalseLabel(std::string label) { falseLabel = label; }
 };
@@ -97,17 +84,17 @@ public:
     Bool(Node* exp, string trueFalse);
 };
 
-class Num : public Expression { //takeen
+class Num : public Expression { 
 public:
     Num(Node* exp); // Exp -> NUM
 };
 
-class NumB : public Expression { //takeen
+class NumB : public Expression { 
 public:
     NumB(Node* exp); // Exp -> NUMB
 };
 
-class String : public Expression { //takeen
+class String : public Expression { 
 public:
     String(Node* exp); // Exp -> STRING
 };
@@ -128,19 +115,20 @@ public:
 };
 
 class Statements : public Node {
-    public:
-    Statements(Statement* statement) : Node() { }; // Statements -> Statement
-    // Statements -> Statements Statement
-    Statements (Statements* statements, Statement* statement) : Node() { 
-    };
+public:
+    Statements(Statement* statement) : Node() {}; // Statements -> Statement
+    Statements (Statements* statements, Statement* statement) : Node() {}; // Statements -> Statements Statement
+
     ~Statements() = default;
 };
 
 class Program : public Node { // Program -> Statements
-    public:
+public:
     Program();
     ~Program() = default;
 };
 
+void isBoolExp(Expression* exp); //to use in parser.ypp
+void endingLoopMarker(); //to use in parser.ypp to mark the end of a WHILE loop
 void generateElfStatements(BooleanExpression* boolExp, bool isElf); ///generate if/else/ statements
 void emitTypesLiteral(Expression* exp, const string& type); ///emit types literal && getelementptr

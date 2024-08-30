@@ -72,14 +72,6 @@ string getRelopOp(string op) {
     return "sge";
 }
 
-// string freshReg() { 
-//     int static currReg = 1;
-//     // std::stringstream reg;
-//     // reg << "%r" << ++currReg;
-//     //return reg.str();
-//     return "currReg";
-// }
-
 string freshGlobalReg() {
     int static currReg = 1;
     return "@glob_" + to_string(currReg++);
@@ -105,7 +97,7 @@ string getCallEmitLine(string funcName, string reg) { //takeen
 string emitTruncation(const string& reg, const string& type1, bool is2Types) { 
     string trunReg = buffer.freshReg();;
     if(is2Types) { //Assign 8-bit value to 32-bit reg
-        buffer.emit(trunReg + " = zext i8 " + reg + " to i32"); //zeoo: zero extension
+        buffer.emit(trunReg + " = zext i8 " + reg + " to i32"); //zext: zero extension
     } else {
         if (type1 == "byte") { //we have only 32-bit reg
             buffer.emit(trunReg + " = trunc i32 " + reg + " to i8");
@@ -113,6 +105,5 @@ string emitTruncation(const string& reg, const string& type1, bool is2Types) {
             buffer.emit(trunReg + " = zext i8 " + reg + " to i1");
         }
     }    
-    
     return trunReg;
 }
